@@ -1,275 +1,484 @@
-import { useState, useEffect } from 'react';
-import { MapPin, ArrowDown, Briefcase, GraduationCap, Calendar, Compass, Rocket, Target, Brain, Wrench, Code, Award, CheckCircle2 } from 'lucide-react';
-import { aiService } from '../services/api';
-import { usePrediction } from '../context/PredictionContext';
-import './CareerRoadmap.css';
+"use client"
+
+import { useState } from "react"
+import {
+  MapPin,
+  Briefcase,
+  GraduationCap,
+  Calendar,
+  Compass,
+  Rocket,
+  Target,
+  Brain,
+  Wrench,
+  Code,
+  Award,
+  CheckCircle2,
+  Sparkles,
+  TrendingUp,
+  Clock,
+  BookOpen,
+} from "lucide-react"
+import "./CareerRoadmap.css"
+
+// Mock data for realistic demo
+const MOCK_ROADMAPS = {
+  "data-scientist": {
+    brief: [
+      "Master Python fundamentals and data manipulation with Pandas/NumPy",
+      "Build strong statistical foundation and learn exploratory data analysis",
+      "Develop machine learning expertise with scikit-learn and deep learning with TensorFlow/PyTorch",
+      "Create portfolio projects showcasing end-to-end ML pipelines",
+      "Gain production experience with MLOps tools and cloud platforms",
+    ],
+    detailed: [
+      {
+        month_or_phase: "Month 1-2",
+        focus_area: "Python & Data Foundations",
+        skills_to_learn: ["Python Programming", "Pandas", "NumPy", "Data Cleaning", "SQL"],
+        tools_to_practice: ["Jupyter Notebook", "VS Code", "PostgreSQL", "Git"],
+        projects_to_build: [
+          "Build a data cleaning pipeline for messy CSV datasets",
+          "Create an automated reporting system with Python",
+        ],
+        certifications: ["Google Data Analytics Certificate"],
+      },
+      {
+        month_or_phase: "Month 3-4",
+        focus_area: "Statistics & Visualization",
+        skills_to_learn: ["Descriptive Statistics", "Probability", "Hypothesis Testing", "Data Visualization"],
+        tools_to_practice: ["Matplotlib", "Seaborn", "Plotly", "Tableau"],
+        projects_to_build: [
+          "Perform A/B test analysis for an e-commerce dataset",
+          "Build interactive dashboards for sales analytics",
+        ],
+        certifications: ["IBM Data Science Professional Certificate"],
+      },
+      {
+        month_or_phase: "Month 5-6",
+        focus_area: "Machine Learning Fundamentals",
+        skills_to_learn: ["Supervised Learning", "Unsupervised Learning", "Feature Engineering", "Model Evaluation"],
+        tools_to_practice: ["scikit-learn", "XGBoost", "MLflow", "Weights & Biases"],
+        projects_to_build: [
+          "Build a customer churn prediction model",
+          "Create a recommendation system for movie ratings",
+        ],
+        certifications: ["AWS Machine Learning Specialty"],
+      },
+    ],
+  },
+  "frontend-developer": {
+    brief: [
+      "Master HTML, CSS, and JavaScript fundamentals",
+      "Learn React.js and modern frontend frameworks",
+      "Understand state management and API integration",
+      "Build responsive, accessible web applications",
+      "Deploy and optimize production applications",
+    ],
+    detailed: [
+      {
+        month_or_phase: "Month 1-2",
+        focus_area: "Web Fundamentals",
+        skills_to_learn: ["HTML5", "CSS3", "JavaScript ES6+", "Responsive Design", "Git"],
+        tools_to_practice: ["VS Code", "Chrome DevTools", "Figma", "GitHub"],
+        projects_to_build: [
+          "Build a personal portfolio website from scratch",
+          "Create a responsive landing page with animations",
+        ],
+        certifications: ["freeCodeCamp Responsive Web Design"],
+      },
+      {
+        month_or_phase: "Month 3-4",
+        focus_area: "React & Modern Frameworks",
+        skills_to_learn: ["React.js", "TypeScript", "Component Architecture", "Hooks", "Context API"],
+        tools_to_practice: ["Next.js", "Vite", "Tailwind CSS", "shadcn/ui"],
+        projects_to_build: [
+          "Build a full-featured task management app",
+          "Create a weather dashboard with API integration",
+        ],
+        certifications: ["Meta Front-End Developer Certificate"],
+      },
+      {
+        month_or_phase: "Month 5-6",
+        focus_area: "Advanced Patterns & Deployment",
+        skills_to_learn: ["State Management", "Testing", "Performance Optimization", "Accessibility"],
+        tools_to_practice: ["Redux/Zustand", "Jest", "Playwright", "Vercel"],
+        projects_to_build: [
+          "Build an e-commerce storefront with cart functionality",
+          "Create a real-time chat application",
+        ],
+        certifications: ["Google UX Design Certificate"],
+      },
+    ],
+  },
+  "ai-engineer": {
+    brief: [
+      "Build strong foundation in Python and software engineering",
+      "Master machine learning and deep learning concepts",
+      "Learn Large Language Models and prompt engineering",
+      "Develop expertise in AI application deployment",
+      "Build production AI systems with RAG and agents",
+    ],
+    detailed: [
+      {
+        month_or_phase: "Month 1-2",
+        focus_area: "Programming & ML Foundations",
+        skills_to_learn: ["Python", "Linear Algebra", "Calculus", "Neural Networks Basics", "PyTorch"],
+        tools_to_practice: ["Google Colab", "Hugging Face", "Weights & Biases", "Docker"],
+        projects_to_build: [
+          "Implement neural networks from scratch",
+          "Fine-tune a pre-trained image classifier",
+        ],
+        certifications: ["DeepLearning.AI TensorFlow Developer"],
+      },
+      {
+        month_or_phase: "Month 3-4",
+        focus_area: "Large Language Models",
+        skills_to_learn: ["Transformers", "Prompt Engineering", "Fine-tuning LLMs", "RAG Systems", "Vector Databases"],
+        tools_to_practice: ["OpenAI API", "LangChain", "Pinecone", "ChromaDB"],
+        projects_to_build: [
+          "Build a document Q&A chatbot with RAG",
+          "Create a code review assistant with GPT-4",
+        ],
+        certifications: ["DeepLearning.AI LLM Specialization"],
+      },
+      {
+        month_or_phase: "Month 5-6",
+        focus_area: "Production AI Systems",
+        skills_to_learn: ["MLOps", "Model Serving", "AI Agents", "Evaluation & Monitoring", "Cost Optimization"],
+        tools_to_practice: ["FastAPI", "Kubernetes", "LangGraph", "Vercel AI SDK"],
+        projects_to_build: [
+          "Deploy a multi-agent AI system for research",
+          "Build an AI-powered SaaS application",
+        ],
+        certifications: ["AWS Solutions Architect"],
+      },
+    ],
+  },
+  default: {
+    brief: [
+      "Assess current skills and identify knowledge gaps",
+      "Build foundational competencies required for the role",
+      "Develop hands-on experience through projects",
+      "Gain relevant certifications and credentials",
+      "Network and apply for target positions",
+    ],
+    detailed: [
+      {
+        month_or_phase: "Month 1-2",
+        focus_area: "Foundation Building",
+        skills_to_learn: ["Core Technical Skills", "Industry Knowledge", "Communication", "Problem Solving"],
+        tools_to_practice: ["Industry Standard Tools", "Documentation", "Version Control"],
+        projects_to_build: [
+          "Complete foundational tutorials and courses",
+          "Build a beginner-level project for your portfolio",
+        ],
+        certifications: ["Relevant Entry-Level Certification"],
+      },
+      {
+        month_or_phase: "Month 3-4",
+        focus_area: "Intermediate Development",
+        skills_to_learn: ["Advanced Concepts", "Best Practices", "Team Collaboration", "Code Review"],
+        tools_to_practice: ["Professional Tools", "CI/CD Pipelines", "Cloud Platforms"],
+        projects_to_build: [
+          "Build a medium-complexity project",
+          "Contribute to open source projects",
+        ],
+        certifications: ["Professional Level Certification"],
+      },
+      {
+        month_or_phase: "Month 5-6",
+        focus_area: "Job Readiness",
+        skills_to_learn: ["System Design", "Leadership", "Interview Prep", "Negotiation"],
+        tools_to_practice: ["Mock Interview Platforms", "Portfolio Sites", "LinkedIn"],
+        projects_to_build: [
+          "Complete a capstone project",
+          "Prepare case studies from your work",
+        ],
+        certifications: ["Specialist Certification"],
+      },
+    ],
+  },
+}
+
+// Mock API service
+const aiService = {
+  generateRoadmap: async (payload) => {
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    const targetLower = payload.target_role.toLowerCase()
+    let mockData
+    if (targetLower.includes("data") && targetLower.includes("scien")) {
+      mockData = MOCK_ROADMAPS["data-scientist"]
+    } else if (targetLower.includes("frontend") || targetLower.includes("front-end") || targetLower.includes("react")) {
+      mockData = MOCK_ROADMAPS["frontend-developer"]
+    } else if (targetLower.includes("ai") || targetLower.includes("machine learning") || targetLower.includes("ml")) {
+      mockData = MOCK_ROADMAPS["ai-engineer"]
+    } else {
+      mockData = MOCK_ROADMAPS["default"]
+    }
+    const adjustedDetailed = mockData.detailed.map((stage, idx) => {
+      const monthsPerStage = Math.ceil(payload.timeline_months / mockData.detailed.length)
+      const startMonth = idx * monthsPerStage + 1
+      const endMonth = Math.min((idx + 1) * monthsPerStage, payload.timeline_months)
+      return {
+        ...stage,
+        month_or_phase: `Month ${startMonth}-${endMonth}`,
+      }
+    })
+    return {
+      brief_roadmap: mockData.brief,
+      detailed_roadmap: adjustedDetailed,
+    }
+  },
+}
+
+const POPULAR_TARGETS = [
+  "Data Scientist", "Frontend Developer", "AI Engineer", "Backend Developer", "Full Stack Developer"
+]
+
+const CURRENT_ROLES = [
+  "Student", "Fresher", "Junior Developer", "Analyst", "Career Changer"
+]
 
 export default function CareerRoadmap() {
-  const { predictionData } = usePrediction();
-  
-  const initialCurrentRole = predictionData?.inputs?.currentRole || (predictionData?.inputs?.degree ? `${predictionData.inputs.degree} Student` : '');
-  const initialTargetRole = predictionData?.role || '';
-  const initialExperience = predictionData?.inputs?.experience > 0 ? 'Experienced' : 'Fresher';
-  const missingSkills = predictionData?.missingSkills || [];
-
-  const [currentRole, setCurrentRole] = useState(initialCurrentRole);
-  const [targetRole, setTargetRole] = useState(initialTargetRole);
-  const [timelineMonths, setTimelineMonths] = useState(6);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [roadmap, setRoadmap] = useState(null);
-  const [errorMsg, setErrorMsg] = useState('');
-
-  // Optional: Auto-generate if all data is present
-  // useEffect(() => {
-  //   if (predictionData && currentRole && targetRole && !roadmap) {
-  //     // We let the user click generate so they know what's happening
-  //   }
-  // }, []);
+  const [currentRole, setCurrentRole] = useState("")
+  const [targetRole, setTargetRole] = useState("")
+  const [timelineMonths, setTimelineMonths] = useState(6)
+  const [experienceLevel, setExperienceLevel] = useState("fresher")
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [roadmap, setRoadmap] = useState(null)
+  const [errorMsg, setErrorMsg] = useState("")
 
   const handleGenerate = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!currentRole || !targetRole) {
-      setErrorMsg("Please provide both current and target roles.");
-      return;
+      setErrorMsg("Please provide both current and target roles.")
+      return
     }
-    setErrorMsg('');
-    setIsGenerating(true);
-    setRoadmap(null);
-    
+    setErrorMsg("")
+    setIsGenerating(true)
+    setRoadmap(null)
     try {
       const payload = {
         current_role: currentRole,
         target_role: targetRole,
         timeline_months: timelineMonths,
-        missing_skills: missingSkills,
-        experience_level: initialExperience
-      };
-      const response = await aiService.generateRoadmap(payload);
+        experience_level: experienceLevel,
+      }
+      const response = await aiService.generateRoadmap(payload)
       setRoadmap({
         brief: response.brief_roadmap || [],
-        detailed: response.detailed_roadmap || []
-      });
+        detailed: response.detailed_roadmap || [],
+      })
     } catch (err) {
-      setErrorMsg(err.message || "Failed to generate roadmap. Please try again.");
+      setErrorMsg(err.message || "Failed to generate roadmap. Please try again.")
     } finally {
-      setIsGenerating(false);
+      setIsGenerating(false)
     }
-  };
+  }
 
-  const getStatusClass = (idx, total) => {
-    if (idx === 0) return 'current';
-    if (idx === total - 1) return 'future target-node';
-    return 'future ongoing-node';
-  };
+  const getStatusLabel = (idx, total) => {
+    if (idx === 0) return "Start Status"
+    if (idx === total - 1) return "Career Goal"
+    return "Milestone"
+  }
+
+  const getStageHeaderColor = (idx, total) => {
+    if (idx === 0) return "oklch(0.65 0.20 250)" // Blue for current
+    if (idx === total - 1) return "oklch(0.65 0.20 155)" // Green for target
+    return "oklch(0.65 0.20 280)" // Indigo for mid
+  }
 
   return (
-    <div className="roadmap-container">
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-      `}} />
-      <header className="page-header">
-        <h1 className="page-title">Career Progression Roadmap</h1>
-        <p className="page-subtitle">Generate a personalized step-by-step pathway powered by AI, tailored to your skill gaps.</p>
+    <div className="roadmap-page">
+      <div className="pattern-overlay" />
+      
+      <header className="roadmap-header no-print">
+        <div className="header-container">
+          <div className="header-icon-box">
+            <TrendingUp size={24} />
+          </div>
+          <div className="header-titles">
+            <h1>Career Roadmap</h1>
+            <p>AI-powered career progression planning</p>
+          </div>
+        </div>
       </header>
 
-      <div className="roadmap-layout">
-        
-        {/* Form Panel */}
-        <div className="form-card glass-panel roadmap-form sticky-panel">
-          <h3 className="panel-title">
-            <Compass size={20} className="text-cyan-400"/> Map Your Path
-          </h3>
-          <form onSubmit={handleGenerate} className="roadmap-inputs">
-            
-            {predictionData && (
-              <div className="auto-filled-badge">
-                <Rocket size={14} /> Profile details automatically loaded from prediction
-              </div>
-            )}
-
-            <div className="form-group">
-              <label><GraduationCap size={16}/> Current Status / Role</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="e.g. CS Student, Junior Dev" 
-                value={currentRole} 
-                onChange={(e) => setCurrentRole(e.target.value)} 
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label><Briefcase size={16}/> Target Role</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="e.g. AI Architect" 
-                value={targetRole} 
-                onChange={(e) => setTargetRole(e.target.value)} 
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label><Calendar size={16}/> Timeline (Months)</label>
-              <input 
-                type="number" 
-                min="1"
-                max="60"
-                className="form-input" 
-                value={timelineMonths} 
-                onChange={(e) => setTimelineMonths(parseInt(e.target.value) || 6)} 
-                required
-              />
-            </div>
-
-            {missingSkills.length > 0 && (
-              <div className="missing-skills-preview">
-                <span className="preview-label">Integrating Missing Skills:</span>
-                <div className="preview-tags">
-                  {missingSkills.slice(0, 3).map(s => <span key={s} className="min-tag">{s}</span>)}
-                  {missingSkills.length > 3 && <span className="min-tag">+{missingSkills.length - 3} more</span>}
-                </div>
-              </div>
-            )}
-
-            {errorMsg && <div className="error-box">{errorMsg}</div>}
-
-            <button 
-              type="submit" 
-              className={`predict-btn ${isGenerating ? 'predicting' : ''}`} 
-              disabled={isGenerating}
-            >
-              {isGenerating ? 'Generating Roadmap...' : 'Generate Roadmap Planner'}
-            </button>
-          </form>
+      {/* Print-only Header */}
+      <div className="print-only-header">
+        <h1>Career Strategy & Roadmap Report</h1>
+        <div className="report-metadata">
+          <p><strong>Target Role:</strong> {targetRole}</p>
+          <p><strong>Current Status:</strong> {currentRole}</p>
+          <p><strong>Timeline:</strong> {timelineMonths} Months</p>
+          <p><strong>Generated on:</strong> {new Date().toLocaleDateString()}</p>
         </div>
-
-        {/* Timeline Panel */}
-        <div className="timeline-container">
-          {!roadmap && !isGenerating && (
-            <div className="empty-state glass-panel text-center">
-              <Compass size={48} className="text-muted mx-auto mb-4"/>
-              <h3 className="text-xl font-bold mb-2">Awaiting Input</h3>
-              <p className="text-muted">Fill out your details to generate a strategic AI timeline.</p>
-            </div>
-          )}
-
-          {isGenerating && (
-            <div className="empty-state glass-panel text-center">
-              <div className="spinner mx-auto mb-4"></div>
-              <p className="text-indigo-400 font-semibold">Consulting Career Strategist AI...</p>
-            </div>
-          )}
-
-          {roadmap && !isGenerating && (
-            <div className="timeline-wrapper reveal">
-              <div className="brief-roadmap-panel premium-glass-panel mb-12 p-8 bg-white border border-slate-200 rounded-2xl shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
-                <h3 className="flex items-center gap-2 font-extrabold text-slate-800 mb-6 border-b border-slate-100 pb-4 text-xl tracking-tight">
-                  <Target size={22} className="text-blue-600" /> Executive Progression Strategy
-                </h3>
-                <ul className="progression-list space-y-4">
-                  {roadmap.brief.map((step, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-slate-700 font-medium text-15px leading-relaxed">
-                      <span className="mt-0.5 flex-shrink-0 text-indigo-500"><CheckCircle2 size={18} /></span>
-                      <span>{step}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="timeline-line"></div>
-              {roadmap.detailed.map((stage, index) => (
-                <div key={index} className={`timeline-node ${getStatusClass(index, roadmap.detailed.length)}`} style={{animationDelay: `${index * 0.15}s`}}>
-                  
-                  <div className="timeline-indicator">
-                    <div className="indicator-circle">
-                      <MapPin size={20} />
-                    </div>
-                  </div>
-
-                  <div className="timeline-card premium-card">
-                    <div className="premium-card-header border-b border-slate-100 pb-5 mb-6">
-                      <div className="flex justify-between items-start">
-                        <span className="premium-level-badge">{stage.month_or_phase}</span>
-                      </div>
-                      <h3 className="role-title text-slate-800 mt-4 font-extrabold text-2xl tracking-tight">{stage.focus_area}</h3>
-                    </div>
-
-                    <div className="card-body flex flex-col gap-7">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {stage.skills_to_learn && stage.skills_to_learn.length > 0 && (
-                          <div className="roadmap-section bg-slate-50 border border-slate-100 p-5 rounded-xl">
-                            <p className="section-label flex items-center gap-1.5 text-indigo-600 font-bold text-xs uppercase tracking-widest mb-4">
-                              <Brain size={16} /> Core Skills
-                            </p>
-                            <div className="flex flex-wrap gap-2.5">
-                              {stage.skills_to_learn.map((s, idx) => (
-                                <span key={idx} className="premium-chip skill-chip">
-                                  {s}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {stage.tools_to_practice && stage.tools_to_practice.length > 0 && (
-                          <div className="roadmap-section bg-slate-50 border border-slate-100 p-5 rounded-xl">
-                            <p className="section-label flex items-center gap-1.5 text-blue-600 font-bold text-xs uppercase tracking-widest mb-4">
-                              <Wrench size={16} /> Tools & Platforms
-                            </p>
-                            <div className="flex flex-wrap gap-2.5">
-                              {stage.tools_to_practice.map((t, idx) => (
-                                <span key={idx} className="premium-chip tool-chip">
-                                  {t}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {stage.projects_to_build && stage.projects_to_build.length > 0 && (
-                        <div className="roadmap-section w-full pt-1">
-                          <p className="section-label flex items-center gap-1.5 text-emerald-600 font-bold text-xs uppercase tracking-widest mb-4">
-                            <Code size={16} /> Projects to Build
-                          </p>
-                          <ul className="project-list flex flex-col gap-3">
-                           {stage.projects_to_build.map((p, idx) => (
-                             <li key={idx} className="flex items-start gap-3 text-[15px] text-slate-600 font-semibold bg-emerald-50/50 p-3.5 rounded-xl border border-emerald-100 shadow-sm hover:shadow-md transition-shadow">
-                               <Rocket size={18} className="text-emerald-500 mt-0.5 flex-shrink-0" /> 
-                               <span>{p}</span>
-                             </li>
-                           ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {stage.certifications && stage.certifications.length > 0 && (
-                        <div className="roadmap-section w-full pt-4 border-t border-slate-100">
-                          <p className="section-label flex items-center gap-1.5 text-amber-600 font-bold text-xs uppercase tracking-widest mb-4">
-                            <Award size={16} /> Recommended Certifications
-                          </p>
-                          <div className="flex flex-wrap gap-2.5">
-                           {stage.certifications.map((c, idx) => (
-                             <span key={idx} className="premium-chip cert-chip">
-                               {c}
-                             </span>
-                           ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <div className="report-border" />
       </div>
+
+      <main className="roadmap-main">
+        <div className="roadmap-grid">
+          
+          <aside className="form-panel no-print">
+            <div className="form-card">
+              <div className="form-header">
+                <div className="form-header-icon">
+                  <Compass size={20} />
+                </div>
+                <h2 style={{fontSize: '1.125rem', fontWeight: '600'}}>Map Your Path</h2>
+              </div>
+              <div className="form-body">
+                <form onSubmit={handleGenerate} className="input-stack">
+                  
+                  <div className="field-group">
+                    <label className="field-label"><GraduationCap size={16} /> Current Status</label>
+                    <select value={currentRole} onChange={(e) => setCurrentRole(e.target.value)} className="form-control">
+                      <option value="">Select current role</option>
+                      {CURRENT_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                    <input className="form-control" style={{marginTop: '0.5rem'}} placeholder="Or type custom..." value={!CURRENT_ROLES.includes(currentRole) ? currentRole : ""} onChange={(e) => setCurrentRole(e.target.value)} />
+                  </div>
+
+                  <div className="field-group">
+                    <label className="field-label"><Briefcase size={16} /> Target Role</label>
+                    <select value={targetRole} onChange={(e) => setTargetRole(e.target.value)} className="form-control">
+                      <option value="">Select target role</option>
+                      {POPULAR_TARGETS.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                    <input className="form-control" style={{marginTop: '0.5rem'}} placeholder="Or type custom..." value={!POPULAR_TARGETS.includes(targetRole) ? targetRole : ""} onChange={(e) => setTargetRole(e.target.value)} />
+                  </div>
+
+                  <div className="field-group">
+                    <label className="field-label"><Calendar size={16} /> Timeline</label>
+                    <select value={timelineMonths} onChange={(e) => setTimelineMonths(parseInt(e.target.value))} className="form-control">
+                      <option value={3}>3 Months (Intensive)</option>
+                      <option value={6}>6 Months (Recommended)</option>
+                      <option value={12}>12 Months (Thorough)</option>
+                    </select>
+                  </div>
+
+                  {errorMsg && <div style={{color: 'red', fontSize: '0.875rem'}}>{errorMsg}</div>}
+
+                  <button type="submit" className="generate-button" disabled={isGenerating}>
+                    {isGenerating ? <><Clock size={18} className="animate-spin" /> Crafting...</> : <><Sparkles size={18} /> Generate Roadmap</>}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </aside>
+
+          <section className="content-panel">
+            {!roadmap && !isGenerating && (
+              <div className="empty-state no-print">
+                <div style={{background: 'rgba(0,0,0,0.05)', width: 'fit-content', padding: '1.5rem', borderRadius: '50%', margin: '0 auto 1.5rem'}}>
+                  <Compass size={48} color="var(--primary)" />
+                </div>
+                <h3 style={{fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem'}}>Ready to Plan Your Career?</h3>
+                <p style={{color: 'var(--muted-foreground)', maxWidth: '400px', margin: '0 auto'}}>Fill out your details to generate an AI-powered roadmap with personalized skills and projects.</p>
+              </div>
+            )}
+
+            {isGenerating && (
+              <div className="loading-state">
+                <SpinnerIcon />
+                <p style={{marginTop: '1.5rem', fontWeight: '600'}}>Analyzing market trends and crafting your path...</p>
+              </div>
+            )}
+
+            {roadmap && !isGenerating && (
+              <div className="roadmap-output">
+                <div className="summary-card">
+                  <h3 style={{display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.125rem', fontWeight: '600', marginBottom: '1.5rem'}}>
+                    <Target size={20} color="var(--primary)" /> Executive Progression Strategy
+                  </h3>
+                  <ul style={{listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                    {roadmap.brief.map((step, idx) => (
+                      <li key={idx} style={{display: 'flex', alignItems: 'flex-start', gap: '0.75rem'}}>
+                        <CheckCircle2 size={18} color="var(--primary)" style={{marginTop: '0.2rem'}} />
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="stage-list">
+                  {roadmap.detailed.map((stage, index) => {
+                    const headerColor = getStageHeaderColor(index, roadmap.detailed.length)
+                    return (
+                      <div key={index} className="stage-item">
+                        <div className="stage-marker">
+                          <div className="marker-dot" style={{borderColor: headerColor}}>
+                            <MapPin size={20} color={headerColor} />
+                          </div>
+                        </div>
+                        <div className="stage-card" style={{borderLeftColor: headerColor}}>
+                          <div className="stage-card-body">
+                            <div className="stage-badges">
+                              <span className="badge badge-time"><Clock size={12} /> {stage.month_or_phase}</span>
+                              <span className="badge badge-status" style={{background: headerColor}}>{getStatusLabel(index, roadmap.detailed.length)}</span>
+                            </div>
+                            <h4 className="stage-title">{stage.focus_area}</h4>
+                            
+                            <div className="stage-grid">
+                              <div className="skills-box">
+                                <p className="box-label"><Brain size={14} /> Core Skills</p>
+                                <div className="chip-group">
+                                  {stage.skills_to_learn.map(s => <span key={s} className="chip">{s}</span>)}
+                                </div>
+                              </div>
+                              <div className="tools-box">
+                                <p className="box-label"><Wrench size={14} /> Tools</p>
+                                <div className="chip-group">
+                                  {stage.tools_to_practice.map(t => <span key={t} className="chip">{t}</span>)}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="projects-section">
+                              <p className="box-label" style={{color: '#10b981'}}><Code size={14} /> Projects</p>
+                              <div className="project-list">
+                                {stage.projects_to_build.map(p => (
+                                  <div key={p} className="project-item">
+                                    <Rocket size={16} color="#10b981" /> <span>{p}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div className="roadmap-footer no-print">
+                  <div>
+                    <h3 style={{fontWeight: '600'}}>Strategic Roadmap Complete</h3>
+                    <p style={{fontSize: '0.875rem', color: 'var(--muted-foreground)'}}>Generate a professional PDF report to save your progress</p>
+                  </div>
+                  <div className="footer-actions">
+                    <button className="btn-primary" onClick={() => window.print()}>
+                      <Sparkles size={16} /> Generate Full Report
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
+
+      <style>{`
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </div>
-  );
+  )
+}
+
+function SpinnerIcon() {
+  return (
+    <div className="animate-spin" style={{width: '3rem', height: '3rem', border: '4px solid rgba(0,0,0,0.1)', borderTopColor: 'var(--primary)', borderRadius: '50%', margin: '0 auto'}}></div>
+  )
 }

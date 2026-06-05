@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { aiService } from '../services/api';
 import { usePrediction } from '../context/PredictionContext';
 import { getRequiredSkillsForRole } from '../data/skillsData';
 import { DEGREES_DATA, getDegreeType, getSpecializations } from '../data/degreesData';
-import { SPECIALIZATION_MAPPING, getSkillsBySpecialization, getInterestsBySpecialization } from '../data/specializationData';
-import { Sparkles, CheckCircle2, ChevronRight, BrainCircuit, User, Briefcase, GraduationCap, Building2, Layers, ArrowLeft, Info, Trophy, Medal, Search, X, Target, TrendingUp, Compass, BookOpen } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { SPECIALIZATION_MAPPING, getSkillsBySpecialization, getInterestsBySpecialization, getSubjectsBySpecialization } from '../data/specializationData';
+import { Sparkles, CheckCircle2, ChevronRight, BrainCircuit, User, Briefcase, GraduationCap, Building2, Layers, ArrowLeft, Info, Trophy, Medal, Search, X, Target, TrendingUp, Compass, BookOpen, AlertCircle, Award, Zap, Lightbulb, RotateCcw, BarChart3 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import './JobPrediction.css';
 
 const TECHNICAL_SKILLS = [
@@ -52,20 +52,8 @@ const NON_TECH_INTERESTS = [
   'Economic Research', 'Content Creation', 'Teaching', 'Operations Management'
 ];
 
-const SUPPORTING_TOOLS = [
-  'Git', 'GitHub', 'GitLab', 'Docker', 'Kubernetes', 'AWS', 'Azure', 'Google Cloud',
-  'Postman', 'Figma', 'Power BI', 'Tableau', 'Jira', 'Confluence', 'Webpack', 'Vite',
-  'npm', 'yarn', 'TensorFlow', 'PyTorch', 'Jenkins', 'Terraform', 'Ansible', 'AutoCAD',
-  'Civil 3D', 'STAAD Pro', 'MS Project', 'Revit', 'ETABS', 'SAP2000', 'MongoDB', 'Redis'
-];
-
-const OPTIONAL_SKILLS = [
-  'Deep Learning', 'NLP', 'System Design', 'CI/CD', 'Microservices', 'GraphQL',
-  'WebSockets', 'Agile/Scrum', 'React Native', 'Flutter', 'Cloud Computing',
-  'Machine Learning', 'Data Warehousing', 'ETL processes', 'A/B Testing'
-];
-
 export default function JobPrediction() {
+  const navigate = useNavigate();
   const { setPredictionData } = usePrediction();
   const [step, setStep] = useState(1);
   const [isPredicting, setIsPredicting] = useState(false);
@@ -82,44 +70,66 @@ export default function JobPrediction() {
 
   // Skills & Interests Fields (Step 2)
   const [selectedCoreSkills, setSelectedCoreSkills] = useState([]);
-  const [selectedTools, setSelectedTools] = useState([]);
-  const [selectedOptionalSkills, setSelectedOptionalSkills] = useState([]);
   const [selectedInterests, setSelectedInterests] = useState([]);
-  
+
   const [skillSearch, setSkillSearch] = useState('');
-  const [toolSearch, setToolSearch] = useState('');
-  const [optionalSearch, setOptionalSearch] = useState('');
   const [experience, setExperience] = useState('');
-  const [projectsCount, setProjectsCount] = useState('');
-  const [internshipsCount, setInternshipsCount] = useState('');
+
+  const [coreSubjects, setCoreSubjects] = useState([]);
   const [projects, setProjects] = useState([]);
   const [internships, setInternships] = useState([]);
+  const [certifications, setCertifications] = useState([]);
+
+  const [subjectSearch, setSubjectSearch] = useState('');
+  const [showAllSubjects, setShowAllSubjects] = useState(false);
+
+  const academicScoreRef = useRef(null);
+  const [hasScrolledStep1, setHasScrolledStep1] = useState(false);
 
   useEffect(() => {
-    const count = parseInt(projectsCount) || 0;
-    setProjects(prev => {
-      const newProjects = [...prev];
-      if (count > newProjects.length) {
-        for (let i = newProjects.length; i < count; i++) newProjects.push({ name: '', tech: '' });
-      } else if (count < newProjects.length) {
-        newProjects.length = count;
-      }
-      return newProjects;
-    });
-  }, [projectsCount]);
+    if (step === 1) {
+      setHasScrolledStep1(false);
+    }
+  }, [step]);
 
   useEffect(() => {
-    const count = parseInt(internshipsCount) || 0;
-    setInternships(prev => {
-      const newInternships = [...prev];
-      if (count > newInternships.length) {
-        for (let i = newInternships.length; i < count; i++) newInternships.push({ company: '', role: '' });
-      } else if (count < newInternships.length) {
-        newInternships.length = count;
-      }
-      return newInternships;
-    });
-  }, [internshipsCount]);
+    if (step === 1 && degree && specialization && !hasScrolledStep1) {
+      const timer = setTimeout(() => {
+        academicScoreRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+        // Optional highlight for high quality UX
+        academicScoreRef.current?.classList.add("highlight");
+        setTimeout(() => {
+          academicScoreRef.current?.classList.remove("highlight");
+        }, 2000);
+      }, 150);
+      setHasScrolledStep1(true);
+      return () => clearTimeout(timer);
+    }
+  }, [degree, specialization, step, hasScrolledStep1]);
+
+  useEffect(() => {
+    if (specialization) {
+      const subjects = getSubjectsBySpecialization(specialization);
+      setCoreSubjects(subjects.map(subject => ({ name: subject, grade: '' })));
+      setSubjectSearch('');
+      setShowAllSubjects(false);
+    } else {
+      setCoreSubjects([]);
+      setSubjectSearch('');
+      setShowAllSubjects(false);
+    }
+  }, [specialization]);
+
+  // Scroll to top when moving to prediction results (Step 3)
+  useEffect(() => {
+    if (step === 3) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [step]);
+
 
   const toggleItem = (item, selected, setSelected) => {
     setSelected(prev =>
@@ -130,7 +140,17 @@ export default function JobPrediction() {
   };
 
   const isStep1Valid = () => {
-    return degree && specialization && academicScore && marks10th && marks12th;
+    const score = parseFloat(academicScore);
+    const m10 = parseFloat(marks10th);
+    const m12 = parseFloat(marks12th);
+    const scoreMax = isCgpa ? 10 : 100;
+
+    return (
+      degree && specialization &&
+      academicScore && score >= 0 && score <= scoreMax &&
+      marks10th && m10 >= 0 && m10 <= 100 &&
+      marks12th && m12 >= 0 && m12 <= 100
+    );
   };
 
   const isStep2Valid = () => {
@@ -165,8 +185,20 @@ export default function JobPrediction() {
     setError(null);
 
     try {
-      const allProjectTech = projects.flatMap(p => p.tech.split(',').map(s => s.trim())).filter(Boolean);
-      const allInternshipRoles = internships.map(i => i.role).filter(Boolean);
+      const allProjectTech = projects.flatMap(p => p.skillsApplied ? p.skillsApplied.split(',').map(s => s.trim()) : []).filter(Boolean);
+      const allInternshipRoles = internships.map(i => i.domain).filter(Boolean);
+
+      const filteredCoreSubjects = coreSubjects.filter(sub => sub.grade !== '');
+      const formattedProjects = projects.map(p => ({
+        title: p.title || '',
+        role: p.role || '',
+        skillsApplied: p.skillsApplied ? p.skillsApplied.split(',').map(s => s.trim()).filter(Boolean) : []
+      }));
+      const formattedInternships = internships.map(i => ({
+        company: i.company || '',
+        domain: i.domain || '',
+        durationMonths: parseInt(i.durationMonths) || 0
+      }));
 
       const payload = {
         degree,
@@ -175,32 +207,77 @@ export default function JobPrediction() {
         is_cgpa: isCgpa,
         marks_10th: parseFloat(marks10th),
         marks_12th: parseFloat(marks12th),
-        skills: Array.from(new Set([...selectedCoreSkills, ...selectedTools, ...selectedOptionalSkills, ...selectedInterests, ...allProjectTech, ...allInternshipRoles])),
-        experience_years: parseInt(experience, 10) || 0
+        skills: Array.from(new Set([...selectedCoreSkills, ...selectedInterests, ...allProjectTech, ...allInternshipRoles])),
+        experience_years: parseInt(experience, 10) || 0,
+        core_subjects: filteredCoreSubjects,
+        projects: formattedProjects,
+        internships: formattedInternships,
+        certifications: certifications
       };
 
       const apiResponse = await aiService.predictJob(payload);
 
-      if (!apiResponse || !apiResponse.predicted_role) {
+      if (!apiResponse || (!apiResponse.predicted_role && !apiResponse.role)) {
         throw new Error("No prediction received from AI service.");
       }
+
       const predictions = apiResponse.predictions || [];
-      const topRole = apiResponse.predicted_role;
+      const topRole = apiResponse.predicted_role || apiResponse.role;
       const requiredSkills = getRequiredSkillsForRole(topRole);
-      const allUserSkills = [...selectedCoreSkills, ...selectedTools, ...selectedOptionalSkills, ...selectedInterests].map(s => s.toLowerCase());
+      const allUserSkillsList = Array.from(new Set([
+        ...selectedCoreSkills, 
+        ...selectedInterests, 
+        ...allProjectTech, 
+        ...allInternshipRoles
+      ]));
+      const allUserSkillsLower = allUserSkillsList.map(s => s.toLowerCase());
+      
+      // 1. Role-Specific Matches (Skills that are directly required for the predicted role)
+      const coreMatches = requiredSkills.filter(reqSkill => {
+        const reqLower = reqSkill.toLowerCase();
+        return allUserSkillsLower.some(userSkill => {
+          if (userSkill === reqLower) return true;
+          if (reqLower === 'java' && userSkill.includes('javascript')) return false;
+          if (userSkill === 'java' && reqLower.includes('javascript')) return false;
+          return (userSkill.length >= 3 && reqLower.includes(userSkill)) || 
+                 (reqLower.length >= 3 && userSkill.includes(reqLower));
+        });
+      });
+      
+      // 2. Additional Expertise (Other recognized skills the user has)
+      const additionalExpertise = allUserSkillsList.filter(userSkill => {
+        const userLower = userSkill.toLowerCase();
+        // If it's already in coreMatches, skip it
+        if (coreMatches.some(m => m.toLowerCase() === userLower)) return false;
+        
+        // Check if it matches any known industry skill (fuzzy match)
+        return [...TECHNICAL_SKILLS, ...NON_TECH_SKILLS].some(industrySkill => {
+          const industryLower = industrySkill.toLowerCase();
+          return userLower === industryLower || 
+                 (userLower.length >= 3 && industryLower.includes(userLower)) || 
+                 (industryLower.length >= 3 && userLower.includes(industryLower));
+        });
+      });
 
-      const matchedSkills = requiredSkills.filter(skill =>
-        allUserSkills.some(userSkill => userSkill.includes(skill.toLowerCase()) || skill.toLowerCase().includes(userSkill))
-      );
+      const matchedSkills = [...coreMatches, ...additionalExpertise];
+      const matchedSkillsLower = matchedSkills.map(s => s.toLowerCase());
+      const missingSkills = requiredSkills.filter(s => !coreMatches.some(m => m.toLowerCase() === s.toLowerCase()));
 
-      const missingSkills = requiredSkills.filter(skill => !matchedSkills.includes(skill));
+      // Improved Skill Match Logic: Use 10 key skills as proficiency benchmark
+      const targetSkillCount = Math.min(requiredSkills.length, 10);
+      const skillMatchPercent = targetSkillCount > 0
+        ? Math.min(100, Math.round((coreMatches.length / targetSkillCount) * 100))
+        : 80;
 
       const newResult = {
         role: topRole,
-        confidence: apiResponse.confidence,
+        confidence: apiResponse.confidence || 75,
         predictions: predictions,
-        explanation: apiResponse.explanation,
-        match: Math.min(100, Math.floor((apiResponse.confidence + (requiredSkills.length > 0 ? (matchedSkills.length / requiredSkills.length) * 100 : 80)) / 2)),
+        explanation: apiResponse.explanation || (apiResponse.top_factors && apiResponse.top_factors.join('\n')) || "AI prediction based on your profile.",
+        score: Math.min(100, Math.round(
+          (0.4 * (apiResponse.confidence || 75)) + 
+          (0.6 * skillMatchPercent)
+        ) + 2),
         requiredSkills,
         matchedSkills,
         missingSkills,
@@ -213,12 +290,29 @@ export default function JobPrediction() {
 
       setResult(newResult);
       setPredictionData(newResult);
+      setStep(3);
     } catch (error) {
       console.error("Prediction failed:", error);
       setError(error.message);
     } finally {
       setIsPredicting(false);
     }
+  };
+
+  const handleReset = () => {
+    setStep(1);
+    setResult(null);
+    setDegree('');
+    setSpecialization('');
+    setAcademicScore('');
+    setSelectedCoreSkills([]);
+    setSelectedInterests([]);
+    setCoreSubjects([]);
+    setProjects([]);
+    setInternships([]);
+    setCertifications([]);
+    setExperience('');
+    setError(null);
   };
 
   const isTechDegree = getDegreeType(degree) === 'technical';
@@ -247,570 +341,681 @@ export default function JobPrediction() {
   return (
     <div className="prediction-container">
       <header className="page-header">
+        <div className="header-logo pt-6">
+          <Sparkles size={28} />
+        </div>
         <h1 className="page-title">AI Career Predictor</h1>
         <p className="page-subtitle">Personalized career pathing driven by your educational background.</p>
       </header>
 
-      <div className="prediction-layout">
-        <div className="form-card glass-panel">
-          {/* Progress Indicator */}
-          <div className="stepper">
-            <div className="step-wrapper">
-              <div className={`step-item ${step > 1 ? 'completed' : ''} ${step === 1 ? 'active' : ''}`}>
-                {step > 1 ? <CheckCircle2 size={20} /> : '1'}
-              </div>
-              <span className="step-label">Academic</span>
-            </div>
-            <div className={`step-line ${step >= 2 ? 'active' : ''}`}></div>
-            <div className="step-wrapper">
-              <div className={`step-item ${step > 2 || result ? 'completed' : ''} ${step === 2 && !result ? 'active' : ''}`}>
-                {step > 2 || result ? <CheckCircle2 size={20} /> : '2'}
-              </div>
-              <span className="step-label">Experience</span>
-            </div>
-            <div className={`step-line ${result ? 'active' : ''}`}></div>
-            <div className="step-wrapper">
-              <div className={`step-item ${result ? 'completed active' : ''}`}>
-                {result ? <CheckCircle2 size={20} /> : '3'}
-              </div>
-              <span className="step-label">Prediction</span>
+      <div className="stepper">
+        <div className="step-wrapper">
+          <div className={`step-item ${step > 1 ? 'completed' : ''} ${step === 1 ? 'active' : ''}`}>
+            {step > 1 ? <CheckCircle2 size={24} /> : '1'}
+          </div>
+          <span className="step-label">Academic</span>
+        </div>
+        <div className={`step-line ${step >= 2 ? 'active' : ''}`}></div>
+        <div className="step-wrapper">
+          <div className={`step-item ${step > 2 || result ? 'completed' : ''} ${step === 2 && !result ? 'active' : ''}`}>
+            {step > 2 || result ? <CheckCircle2 size={24} /> : '2'}
+          </div>
+          <span className="step-label">Experience</span>
+        </div>
+        <div className={`step-line ${result || step === 3 ? 'active' : ''}`}></div>
+        <div className="step-wrapper">
+          <div className={`step-item ${result || step === 3 ? 'completed active' : ''}`}>
+            {result || step === 3 ? <CheckCircle2 size={24} /> : '3'}
+          </div>
+          <span className="step-label">Prediction</span>
+        </div>
+      </div>
+
+      {isPredicting ? (
+        <div className="full-page-loading reveal">
+          <div className="loading-content">
+            <BrainCircuit size={64} className="spin-icon text-blue-500 mb-6 mx-auto" />
+            <h2 className="text-3xl font-bold text-slate-800">Analyzing your profile...</h2>
+            <p className="text-slate-500 mt-2">Matching your skills to industry demands.</p>
+          </div>
+        </div>
+      ) : step === 3 && result ? (
+        <div className="result-container reveal">
+          {/* 2. Top Career Matches - Vertical Stack */}
+          <div className="career-section">
+            <h3 className="section-heading">Top Career Matches</h3>
+            <div className="career-stack">
+              {(() => {
+                const mainItem = { ...result, rank: 1 };
+                const altPredictions = (result && Array.isArray(result.predictions) && result.predictions.length > 1)
+                  ? result.predictions.slice(1, 3).map((p, idx) => ({
+                    ...p,
+                    rank: idx + 2,
+                    confidence: p.score || p.confidence || Math.max(10, (result.confidence || 70) - (idx + 1) * 10)
+                  }))
+                  : [
+                    { role: "Software Engineer", confidence: Math.max(10, (result.confidence || 75) - 10), rank: 2 },
+                    { role: "Data Analyst", confidence: Math.max(5, (result.confidence || 75) - 20), rank: 3 }
+                  ];
+
+                const cards = [mainItem, ...altPredictions].slice(0, 3);
+                const themes = ['blue', 'purple', 'orange'];
+
+                return cards.map((item, idx) => (
+                  <div key={idx} className={`career-card-stacked ${idx === 0 ? 'best-match' : ''} theme-${themes[idx]}`}>
+                    <div className="card-rank-badge">#{item.rank}</div>
+                    <div className="card-info">
+                      <div className="card-role-title">
+                        <h4>{item.role}</h4>
+                        {idx === 0 && <span className="best-match-tag">Best Match</span>}
+                      </div>
+                      <div className="card-match-details">
+                        <span className="match-percent">{item.confidence}% Match</span>
+                        <div className="match-progress-bar">
+                          <div className="progress-fill" style={{ width: `${item.confidence}%` }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ));
+              })()}
             </div>
           </div>
 
-          {step === 1 ? (
-            <div className="form-section reveal">
-              <div className="form-section-title">Step 1: Academic Background</div>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Degree</label>
-                  <select className="form-input" value={degree} onChange={(e) => { setDegree(e.target.value); setSpecialization(''); setSelectedCoreSkills([]); setSelectedTools([]); setSelectedOptionalSkills([]); setSelectedInterests([]); }} required>
-                    <option value="" disabled>Select degree</option>
-                    {DEGREES_DATA.map(d => (
-                      <option key={d.degree} value={d.degree}>{d.degree}</option>
-                    ))}
-                  </select>
+          {/* 3. Skills Breakdown */}
+          <div className="skills-section">
+            <h3 className="section-heading">Skills Breakdown</h3>
+            <div className="skills-breakdown-container">
+              <div className="skills-group glass-panel">
+                <div className="group-header">
+                  <CheckCircle2 size={20} className="text-emerald-500" />
+                  <h4>Your Strengths</h4>
+                  <span className="count-badge">{result.matchedSkills.length} skills</span>
                 </div>
-                <div className="form-group">
-                  <label>Specialization</label>
-                  <select className="form-input" value={specialization} onChange={(e) => setSpecialization(e.target.value)} required disabled={!degree}>
-                    <option value="" disabled>Select specialization</option>
-                    {getSpecializations(degree).map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
+                <div className="skills-chips">
+                  {result.matchedSkills.length > 0 ? result.matchedSkills.map(s => (
+                    <span key={s} className="skill-chip-tag strength">{s}</span>
+                  )) : <span className="text-slate-400 text-sm italic">Add skills to see your strengths</span>}
                 </div>
               </div>
 
-              <div className="form-grid">
-                <div className="form-group">
-                  <div className="label-with-toggle">
-                    <label>{isCgpa ? 'CGPA' : 'Percentage'}</label>
-                    <button type="button" className="toggle-mini" onClick={() => setIsCgpa(!isCgpa)}>
-                      Switch to {isCgpa ? '%' : 'CGPA'}
-                    </button>
-                  </div>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-input"
-                    placeholder={isCgpa ? "e.g. 9.5" : "e.g. 85"}
-                    value={academicScore}
-                    onChange={(e) => setAcademicScore(e.target.value)}
-                    required
-                  />
+              <div className="skills-group glass-panel">
+                <div className="group-header">
+                  <AlertCircle size={20} className="text-orange-500" />
+                  <h4>Skills to Improve</h4>
+                  <span className="count-badge">{result.missingSkills.length} skills</span>
                 </div>
-                <div className="form-group">
-                  <label>10th Marks (%)</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    placeholder="e.g. 92"
-                    value={marks10th}
-                    onChange={(e) => setMarks10th(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>12th Marks (%)</label>
-                  <input
-                    type="number"
-                    className="form-input"
-                    placeholder="e.g. 88"
-                    value={marks12th}
-                    onChange={(e) => setMarks12th(e.target.value)}
-                    required
-                  />
+                <div className="skills-chips">
+                  {result.missingSkills.length > 0 ? result.missingSkills.map(s => (
+                    <span key={s} className="skill-chip-tag improvement">{s}</span>
+                  )) : <span className="text-slate-400 text-sm italic">You're fully ready!</span>}
                 </div>
               </div>
-
-              {isStep1Valid() && (
-                <div className="education-preview reveal">
-                  <div className="preview-title">
-                    <Layers size={16} />
-                    Potential Paths from your {degree}
-                  </div>
-                  <div className="path-tags">
-                    {getEducationRoles().map(role => (
-                      <span key={role} className="path-tag">{role}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <button
-                className="predict-btn"
-                disabled={!isStep1Valid()}
-                onClick={() => setStep(2)}
-              >
-                Next Step <ChevronRight size={18} />
-              </button>
             </div>
-          ) : (
-            <div className="form-section reveal">
-              <button className="back-btn" onClick={() => setStep(1)}>
-                <ArrowLeft size={16} /> Back to Academic Background
-              </button>
-              <div className="form-section-title">Step 2: Skills & Interests</div>
+          </div>
 
-              {/* CORE SKILLS */}
-              <div className="form-group" style={{ marginBottom: '24px' }}>
-                <div className="section-label-row">
-                  <label>Core Skills <span className="text-muted">(Select at least 2)</span></label>
-                  <span className="selection-badge">{selectedCoreSkills.length} Selected</span>
-                </div>
+          {/* 4. Why This Role Fits You */}
+          <div className="explanation-section">
+            <h3 className="section-heading">Why This Role Fits You</h3>
+            <div className="explanation-card glass-panel">
+              <div className="p-3 bg-amber-50 rounded-xl">
+                <Lightbulb size={24} className="text-amber-500" />
+              </div>
+              <ul className="explanation-bullets">
+                <li>Your background in <strong>{specialization || 'your field'}</strong> provides {result.confidence > 80 ? 'an exceptional' : 'a solid'} foundation for this role.</li>
+                <li>The combination of <strong>{result.matchedSkills.slice(0, 2).join(' and ') || 'your core skills'}</strong> matches the high-priority requirements.</li>
+                <li>Your academic performance and projects demonstrate strong potential for <strong>{result.role}</strong> positions.</li>
+                <li>The roadmap below highlights a clear path to bridge your current <strong>{result.missingSkills.length}</strong> missing skill gaps.</li>
+              </ul>
+            </div>
+          </div>
 
-                {/* Search Bar */}
-                <div className="skill-search-wrapper">
-                  <div className="skill-search-input-container">
-                    <Search className="search-icon" size={18} />
-                    <input
-                      type="text"
-                      className="skill-search-input"
-                      placeholder="Search core skills (e.g. Python, Physics)..."
-                      value={skillSearch}
-                      onChange={(e) => setSkillSearch(e.target.value)}
-                    />
-                    {skillSearch && <X className="clear-search" size={18} onClick={() => setSkillSearch('')} />}
+          {/* 5. New Grid: Projects & Side Highlights */}
+          <div className="new-sections-grid">
+            {/* Recommended Projects */}
+            <div className="projects-column">
+              <h3 className="section-heading">Recommended Projects</h3>
+              <div className="projects-grid-stack">
+                <div className="project-card-new">
+                  <h4>Full-stack {result.role} Portfolio</h4>
+                  <p>Build a comprehensive application that showcases your ability to handle both frontend and backend logic.</p>
+                  <div className="project-stack">
+                    <span className="tech-chip">React</span>
+                    <span className="tech-chip">Node.js</span>
+                    <span className="tech-chip">Database</span>
                   </div>
-
-                  {skillSearch && (
-                    <div className="search-results-dropdown glass-panel">
-                      {skillOptions
-                        .filter(skill => skill.toLowerCase().includes(skillSearch.toLowerCase()) && !selectedCoreSkills.includes(skill))
-                        .slice(0, 10).map(skill => (
-                          <div key={skill} className="search-result-item" onClick={() => { toggleItem(skill, selectedCoreSkills, setSelectedCoreSkills); setSkillSearch(''); }}>
-                            <Sparkles size={14} className="text-cyan-400" /><span>{skill}</span>
-                          </div>
-                      ))}
-                      {skillOptions.filter(skill => skill.toLowerCase().includes(skillSearch.toLowerCase()) && !selectedCoreSkills.includes(skill)).length === 0 && (
-                        <div className="no-results">No matching skills found. Try another term.</div>
-                      )}
-                    </div>
-                  )}
+                  <button className="start-proj-btn-new">Start Project</button>
                 </div>
-
-                {selectedCoreSkills.length > 0 && (
-                  <div className="selected-skills-badges">
-                    <div className="badges-label">Selected Core Skills:</div>
-                    <div className="badges-container">
-                      {selectedCoreSkills.map(skill => (
-                        <span key={skill} className="selected-badge">{skill} <X size={14} className="remove-badge" onClick={() => toggleItem(skill, selectedCoreSkills, setSelectedCoreSkills)} /></span>
-                      ))}
-                    </div>
+                <div className="project-card-new">
+                  <h4>{result.role} Challenge Pack</h4>
+                  <p>Solve 10+ industry-standard problems focusing on scalability and performance optimization.</p>
+                  <div className="project-stack">
+                    <span className="tech-chip">Algorithms</span>
+                    <span className="tech-chip">Optimization</span>
                   </div>
-                )}
+                  <button className="start-proj-btn-new">View Challenges</button>
+                </div>
+              </div>
+            </div>
 
-                <div className="skills-chip-container">
-                  {skillOptions.filter(skill => !skillSearch || skill.toLowerCase().includes(skillSearch.toLowerCase())).slice(0, skillSearch ? 40 : 20).map(skill => (
-                    <button key={skill} type="button" className={`skill-chip ${selectedCoreSkills.includes(skill) ? 'selected' : ''}`} onClick={() => toggleItem(skill, selectedCoreSkills, setSelectedCoreSkills)}>
-                      {skill}
-                    </button>
-                  ))}
+            {/* Time & Impact */}
+            <div className="side-highlights">
+              <div>
+                <h3 className="section-heading">Preparation</h3>
+                <div className="highlight-card">
+                  <h4>Time to Job Ready</h4>
+                  <div className="time-value">
+                    {Math.max(4, result.missingSkills.length * 2)}–{Math.max(6, result.missingSkills.length * 3)} Weeks
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">Estimated based on your current skill gap and learning pace.</p>
                 </div>
               </div>
 
-              {/* SUPPORTING TOOLS */}
-              <div className="form-group" style={{ marginBottom: '24px' }}>
-                <div className="section-label-row">
-                  <label>Supporting Tools</label>
-                  <span className="selection-badge">{selectedTools.length} Selected</span>
-                </div>
-
-                <div className="skill-search-wrapper">
-                  <div className="skill-search-input-container">
-                    <Search className="search-icon" size={18} />
-                    <input
-                      type="text"
-                      className="skill-search-input"
-                      placeholder="Search tools (e.g. Docker, Figma)..."
-                      value={toolSearch}
-                      onChange={(e) => setToolSearch(e.target.value)}
-                    />
-                    {toolSearch && <X className="clear-search" size={18} onClick={() => setToolSearch('')} />}
+              <div className="mt-4">
+                <div className="highlight-card">
+                  <h4>Impact Preview</h4>
+                  <div className="impact-list">
+                    {result.missingSkills.slice(0, 3).map((s, i) => (
+                      <div key={i} className="impact-item">
+                        <span className="skill">{s}</span>
+                        <span className="improvement">+{10 + i * 5}% Match</span>
+                      </div>
+                    ))}
+                    {result.missingSkills.length === 0 && (
+                      <div className="text-center py-2 text-slate-400 text-sm">Skills fully optimized</div>
+                    )}
                   </div>
-
-                  {toolSearch && (
-                    <div className="search-results-dropdown glass-panel">
-                      {SUPPORTING_TOOLS
-                        .filter(tool => tool.toLowerCase().includes(toolSearch.toLowerCase()) && !selectedTools.includes(tool))
-                        .slice(0, 10).map(tool => (
-                          <div key={tool} className="search-result-item" onClick={() => { toggleItem(tool, selectedTools, setSelectedTools); setToolSearch(''); }}>
-                            <Sparkles size={14} className="text-cyan-400" /><span>{tool}</span>
-                          </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {selectedTools.length > 0 && (
-                  <div className="selected-skills-badges">
-                    <div className="badges-label">Selected Tools:</div>
-                    <div className="badges-container">
-                      {selectedTools.map(tool => (
-                        <span key={tool} className="selected-badge tool-badge" style={{ background: '#0284c7', boxShadow: '0 4px 10px rgba(2, 132, 199, 0.25)' }}>{tool} <X size={14} className="remove-badge" onClick={() => toggleItem(tool, selectedTools, setSelectedTools)} /></span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="skills-chip-container">
-                  {SUPPORTING_TOOLS.filter(tool => !toolSearch || tool.toLowerCase().includes(toolSearch.toLowerCase())).slice(0, 15).map(tool => (
-                    <button key={tool} type="button" className={`skill-chip ${selectedTools.includes(tool) ? 'selected' : ''}`} style={selectedTools.includes(tool) ? { background: '#0284c7', borderColor: '#0284c7', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' } : {}} onClick={() => toggleItem(tool, selectedTools, setSelectedTools)}>
-                      {tool}
-                    </button>
-                  ))}
                 </div>
               </div>
+            </div>
+          </div>
 
-              {/* OPTIONAL SKILLS */}
-              <div className="form-group" style={{ marginBottom: '24px' }}>
-                <div className="section-label-row">
-                  <label>Optional Skills <span className="text-muted">(Bonus)</span></label>
-                  <span className="selection-badge">{selectedOptionalSkills.length} Selected</span>
+          {/* 6. Strategic Roadmap - Premium Timeline */}
+          <div className="roadmap-container">
+            <h3 className="section-heading">Strategic Roadmap</h3>
+            <div className="roadmap-timeline">
+              {result.actions.map((action, idx) => (
+                <div key={idx} className="roadmap-step">
+                  <div className="roadmap-icon">
+                    {idx === 0 ? <BookOpen size={16} /> : idx === 1 ? <Target size={16} /> : <Zap size={16} />}
+                  </div>
+                  <div className="roadmap-card">
+                    <div className="roadmap-phase">PHASE {idx + 1}</div>
+                    <div className="roadmap-text">{action}</div>
+                  </div>
                 </div>
+              ))}
+            </div>
+          </div>
 
-                <div className="skill-search-wrapper">
-                  <div className="skill-search-input-container">
-                    <Search className="search-icon" size={18} />
-                    <input
-                      type="text"
-                      className="skill-search-input"
-                      placeholder="Search optional skills (e.g. CI/CD, NLP)..."
-                      value={optionalSearch}
-                      onChange={(e) => setOptionalSearch(e.target.value)}
-                    />
-                    {optionalSearch && <X className="clear-search" size={18} onClick={() => setOptionalSearch('')} />}
+          {/* 7. Action Buttons Section - Navigation Hub */}
+          <div className="result-footer-actions">
+            <button className="btn-action-premium primary" onClick={() => navigate('/dashboard/courses')}>
+              <GraduationCap size={18} />
+              View Recommended Courses
+            </button>
+            <button className="btn-action-premium secondary hover-blue" onClick={() => navigate('/dashboard/skill-gap')}>
+              <BarChart3 size={18} />
+              Deep Skill Gap Analysis
+            </button>
+            <button className="btn-action-premium secondary hover-blue" onClick={() => navigate('/dashboard/career-roadmap')}>
+              <Compass size={18} />
+              Career Roadmap
+            </button>
+            <button className="btn-action-premium secondary hover-blue" onClick={() => { handleReset(); navigate('/dashboard/job-prediction'); }}>
+              <RotateCcw size={18} />
+              Modify Profile
+            </button>
+            <button className="btn-action-premium secondary" onClick={() => { handleReset(); navigate('/dashboard/job-prediction'); }}>
+              <ArrowLeft size={18} />
+              New Prediction
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="main-content-grid">
+          <div className="form-column transition-all duration-300">
+            <div className="form-card relative overflow-hidden">
+              {step === 1 ? (
+                <div className="form-section reveal">
+                  <div className="form-section-title">Step 1: Academic Background</div>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>Degree</label>
+                      <select className="form-input" value={degree} onChange={(e) => { setDegree(e.target.value); setSpecialization(''); setSelectedCoreSkills([]); setSelectedInterests([]); }} required>
+                        <option value="" disabled>Select degree</option>
+                        {DEGREES_DATA.map(d => (
+                          <option key={d.degree} value={d.degree}>{d.degree}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Specialization</label>
+                      <select className="form-input" value={specialization} onChange={(e) => setSpecialization(e.target.value)} required disabled={!degree}>
+                        <option value="" disabled>Select specialization</option>
+                        {getSpecializations(degree).map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
-                  {optionalSearch && (
-                    <div className="search-results-dropdown glass-panel">
-                      {OPTIONAL_SKILLS
-                        .filter(skill => skill.toLowerCase().includes(optionalSearch.toLowerCase()) && !selectedOptionalSkills.includes(skill))
-                        .slice(0, 10).map(skill => (
-                          <div key={skill} className="search-result-item" onClick={() => { toggleItem(skill, selectedOptionalSkills, setSelectedOptionalSkills); setOptionalSearch(''); }}>
-                            <Sparkles size={14} className="text-cyan-400" /><span>{skill}</span>
-                          </div>
-                      ))}
+                  <div ref={academicScoreRef} className="academic-score-section scroll-offset">
+                    <div className="form-grid">
+                      <div className="form-group">
+                        <div className="section-header-flex">
+                          <label style={{ margin: 0 }}>{isCgpa ? 'CGPA' : 'Percentage'}</label>
+                          <button type="button" className="toggle-mini" onClick={() => setIsCgpa(!isCgpa)}>
+                            Switch to {isCgpa ? '%' : 'CGPA'}
+                          </button>
+                        </div>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max={isCgpa ? 10 : 100}
+                          className="form-input"
+                          placeholder={isCgpa ? "e.g. 9.5" : "e.g. 85"}
+                          value={academicScore}
+                          onChange={(e) => {
+                            let val = e.target.value;
+                            if (val !== '') {
+                              const num = parseFloat(val);
+                              const max = isCgpa ? 10 : 100;
+                              if (num > max) val = max.toString();
+                              if (num < 0) val = '0';
+                            }
+                            setAcademicScore(val);
+                          }}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>10th Marks (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          className="form-input"
+                          placeholder="e.g. 92"
+                          value={marks10th}
+                          onChange={(e) => {
+                            let val = e.target.value;
+                            if (val !== '') {
+                              const num = parseFloat(val);
+                              if (num > 100) val = '100';
+                              if (num < 0) val = '0';
+                            }
+                            setMarks10th(val);
+                          }}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>12th Marks (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          className="form-input"
+                          placeholder="e.g. 88"
+                          value={marks12th}
+                          onChange={(e) => {
+                            let val = e.target.value;
+                            if (val !== '') {
+                              const num = parseFloat(val);
+                              if (num > 100) val = '100';
+                              if (num < 0) val = '0';
+                            }
+                            setMarks12th(val);
+                          }}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {coreSubjects.length > 0 && (
+                    <div className="dynamic-inputs-section reveal">
+                      <h4 className="dynamic-section-title mb-4">Core Subjects <span className="text-muted text-sm font-normal">(Optional)</span></h4>
+
+                      <div className="skill-search-wrapper">
+                        <div className="skill-search-input-container">
+                          <input
+                            type="text"
+                            className="form-input skill-search-input"
+                            placeholder="Search subjects..."
+                            value={subjectSearch}
+                            onChange={(e) => setSubjectSearch(e.target.value)}
+                          />
+                          {subjectSearch && (
+                            <X className="clear-search" size={18} onClick={() => setSubjectSearch('')} />
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="skills-chip-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        {(() => {
+                          const filteredSubjects = coreSubjects.filter(sub => sub.name.toLowerCase().includes(subjectSearch.toLowerCase()));
+                          const visibleSubjects = showAllSubjects || subjectSearch ? filteredSubjects : filteredSubjects.slice(0, 3);
+
+                          if (visibleSubjects.length === 0) {
+                            return <div className="text-muted col-span-2">No subjects found</div>;
+                          }
+
+                          return visibleSubjects.map((subject) => (
+                            <div key={subject.name} className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: 0 }}>
+                              <span style={{ flex: 1, fontSize: '0.9rem', fontWeight: 600 }}>{subject.name}</span>
+                              <select
+                                className="form-input"
+                                style={{ width: '100px', flex: 'none', padding: '6px' }}
+                                value={subject.grade}
+                                onChange={(e) => {
+                                  const updatedSubjects = coreSubjects.map(sub =>
+                                    sub.name === subject.name ? { ...sub, grade: e.target.value } : sub
+                                  );
+                                  setCoreSubjects(updatedSubjects);
+                                }}
+                              >
+                                <option value="">None</option>
+                                <option value="A+">A+</option>
+                                <option value="A">A</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B">B</option>
+                                <option value="B-">B-</option>
+                                <option value="C+">C+</option>
+                                <option value="C">C</option>
+                                <option value="C-">C-</option>
+                                <option value="D">D</option>
+                              </select>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+
+                      {(() => {
+                        const filteredSubjects = coreSubjects.filter(sub => sub.name.toLowerCase().includes(subjectSearch.toLowerCase()));
+                        if (!subjectSearch && filteredSubjects.length > 3) {
+                          return (
+                            <button
+                              type="button"
+                              className="toggle-mini mt-4"
+                              onClick={() => setShowAllSubjects(!showAllSubjects)}
+                            >
+                              {showAllSubjects ? 'Show Less' : `Show More (${filteredSubjects.length - 3})`}
+                            </button>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   )}
-                </div>
 
-                {selectedOptionalSkills.length > 0 && (
-                  <div className="selected-skills-badges">
-                    <div className="badges-label">Optional Skills:</div>
-                    <div className="badges-container">
-                      {selectedOptionalSkills.map(skill => (
-                        <span key={skill} className="selected-badge optional-badge" style={{ background: '#10b981', boxShadow: '0 4px 10px rgba(16, 185, 129, 0.25)' }}>{skill} <X size={14} className="remove-badge" onClick={() => toggleItem(skill, selectedOptionalSkills, setSelectedOptionalSkills)} /></span>
+                  <div className="action-row pt-6 border-t border-slate-100">
+                    <button className="predict-btn" disabled={!isStep1Valid()} onClick={() => setStep(2)}>
+                      Next Step <ChevronRight size={20} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="form-section reveal">
+                  <button className="back-btn transition-colors hover:bg-slate-50" onClick={() => setStep(1)}>
+                    <ArrowLeft size={16} /> Back to Academic Background
+                  </button>
+                  <div className="form-section-title">Step 2: Skills & Experience</div>
+
+                  {/* CORE SKILLS */}
+                  <div className="form-group">
+                    <div className="section-header-flex">
+                      <label style={{ margin: 0 }}>Core Skills <span className="text-muted font-normal">(Select at least 2)</span></label>
+                    </div>
+
+                    <div className="skill-search-wrapper">
+                      <div className="skill-search-input-container">
+                        <input
+                          type="text"
+                          className="form-input skill-search-input"
+                          placeholder="Search specific skills..."
+                          value={skillSearch}
+                          onChange={(e) => setSkillSearch(e.target.value)}
+                        />
+                        {skillSearch && <X className="clear-search" size={18} onClick={() => setSkillSearch('')} />}
+                      </div>
+                    </div>
+
+                    {selectedCoreSkills.length > 0 && (
+                      <div className="skills-chip-container mb-4 pb-4 border-b border-slate-100">
+                        {selectedCoreSkills.map(skill => (
+                          <button key={skill} type="button" className="skill-chip selected" onClick={() => toggleItem(skill, selectedCoreSkills, setSelectedCoreSkills)}>
+                            {skill} <X size={14} />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="skills-chip-container">
+                      {skillOptions.filter(skill => !skillSearch || skill.toLowerCase().includes(skillSearch.toLowerCase())).filter(skill => !selectedCoreSkills.includes(skill)).slice(0, 15).map(skill => (
+                        <button key={skill} type="button" className="skill-chip unselected" onClick={() => { toggleItem(skill, selectedCoreSkills, setSelectedCoreSkills); setSkillSearch(''); }}>
+                          {skill}
+                        </button>
                       ))}
                     </div>
                   </div>
-                )}
 
-                <div className="skills-chip-container">
-                  {OPTIONAL_SKILLS.filter(skill => !optionalSearch || skill.toLowerCase().includes(optionalSearch.toLowerCase())).slice(0, 12).map(skill => (
-                    <button key={skill} type="button" className={`skill-chip ${selectedOptionalSkills.includes(skill) ? 'selected' : ''}`} style={selectedOptionalSkills.includes(skill) ? { background: '#10b981', borderColor: '#10b981', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' } : {}} onClick={() => toggleItem(skill, selectedOptionalSkills, setSelectedOptionalSkills)}>
-                      {skill}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                  {/* INTERESTS */}
+                  <div className="form-group mt-8">
+                    <label>Career Interests <span className="text-muted font-normal">(Select at least 1)</span></label>
+                    <div className="skills-chip-container">
+                      {interestOptions.map(interest => (
+                        <button
+                          key={interest}
+                          type="button"
+                          className={`skill-chip interest-chip ${selectedInterests.includes(interest) ? 'selected' : 'unselected'}`}
+                          onClick={() => toggleItem(interest, selectedInterests, setSelectedInterests)}
+                        >
+                          {interest}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              <div className="form-group">
-                <label>Career Interests (Select at least 2)</label>
-                <div className="skills-chip-container">
-                  {interestOptions.map(interest => (
+                  <div className="form-section-title mt-10">Experience Overview</div>
+
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>Years of Experience</label>
+                      <input type="number" min="0" className="form-input" placeholder="e.g. 2" value={experience} onChange={(e) => setExperience(e.target.value)} />
+                    </div>
+                  </div>
+
+                  {/* Projects Section */}
+                  <div className="dynamic-inputs-section blue">
+                    <div className="section-header-flex">
+                      <h4 className="dynamic-section-title">Projects</h4>
+                      <button type="button" className="add-btn blue-variant" onClick={() => setProjects([...projects, { title: '', role: '', skillsApplied: '' }])}>+ Add</button>
+                    </div>
+                    {projects.map((proj, idx) => (
+                      <div className="form-group mt-6 p-4 bg-white rounded-lg border border-blue-200" key={`proj-${idx}`}>
+                        <div className="flex justify-end mb-2">
+                          <button type="button" onClick={() => { const newP = [...projects]; newP.splice(idx, 1); setProjects(newP); }} className="remove-btn">Remove</button>
+                        </div>
+                        <div className="form-grid">
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label>Title</label>
+                            <input type="text" className="form-input" placeholder="Project Name" value={proj.title} onChange={(e) => { const newP = [...projects]; newP[idx].title = e.target.value; setProjects(newP); }} required />
+                          </div>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label>Your Role</label>
+                            <input type="text" className="form-input" placeholder="e.g. Lead Developer" value={proj.role} onChange={(e) => { const newP = [...projects]; newP[idx].role = e.target.value; setProjects(newP); }} required />
+                          </div>
+                        </div>
+                        <div className="form-group mt-4" style={{ margin: 0 }}>
+                          <label>Skills Applied <span className="text-muted font-normal">(comma separated)</span></label>
+                          <input type="text" className="form-input" placeholder="React, Node.js, Python" value={proj.skillsApplied} onChange={(e) => { const newP = [...projects]; newP[idx].skillsApplied = e.target.value; setProjects(newP); }} required />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Internships Section */}
+                  <div className="dynamic-inputs-section blue">
+                    <div className="section-header-flex">
+                      <h4 className="dynamic-section-title">Internships</h4>
+                      <button type="button" className="add-btn blue-variant" onClick={() => setInternships([...internships, { company: '', domain: '', durationMonths: '' }])}>+ Add</button>
+                    </div>
+                    {internships.map((int, idx) => (
+                      <div className="form-group mt-6 p-4 bg-white rounded-lg border border-blue-200" key={`int-${idx}`}>
+                        <div className="flex justify-end mb-2">
+                          <button type="button" onClick={() => { const newI = [...internships]; newI.splice(idx, 1); setInternships(newI); }} className="remove-btn">Remove</button>
+                        </div>
+                        <div className="form-grid">
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label>Company</label>
+                            <input type="text" className="form-input" placeholder="e.g. Google" value={int.company} onChange={(e) => { const newI = [...internships]; newI[idx].company = e.target.value; setInternships(newI); }} required />
+                          </div>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label>Domain</label>
+                            <select className="form-input" value={int.domain} onChange={(e) => { const newI = [...internships]; newI[idx].domain = e.target.value; setInternships(newI); }} required>
+                              <option value="" disabled>Select domain</option>
+                              <option value="Web Development">Web Development</option>
+                              <option value="Data Science">Data Science</option>
+                              <option value="Machine Learning">Machine Learning</option>
+                              <option value="Cloud Computing">Cloud Computing</option>
+                              <option value="Cybersecurity">Cybersecurity</option>
+                              <option value="Marketing">Marketing</option>
+                              <option value="Finance">Finance</option>
+                              <option value="Design">Design</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label>Duration (Months)</label>
+                            <input type="number" min="1" className="form-input" placeholder="e.g. 3" value={int.durationMonths} onChange={(e) => { const newI = [...internships]; newI[idx].durationMonths = e.target.value; setInternships(newI); }} required />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Certifications Section */}
+                  <div className="dynamic-inputs-section blue">
+                    <div className="section-header-flex">
+                      <h4 className="dynamic-section-title">Certifications</h4>
+                      <button type="button" className="add-btn blue-variant" onClick={() => setCertifications([...certifications, { name: '', platform: '', domain: '' }])}>+ Add</button>
+                    </div>
+                    {certifications.map((cert, idx) => (
+                      <div className="form-group mt-6 p-4 bg-white rounded-lg border border-blue-200" key={`cert-${idx}`}>
+                        <div className="flex justify-end mb-2">
+                          <button type="button" onClick={() => { const newC = [...certifications]; newC.splice(idx, 1); setCertifications(newC); }} className="remove-btn">Remove</button>
+                        </div>
+                        <div className="form-grid">
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label>Name</label>
+                            <input type="text" className="form-input" placeholder="e.g. AWS Solutions Architect" value={cert.name} onChange={(e) => { const newC = [...certifications]; newC[idx].name = e.target.value; setCertifications(newC); }} required />
+                          </div>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label>Platform</label>
+                            <select className="form-input" value={cert.platform} onChange={(e) => { const newC = [...certifications]; newC[idx].platform = e.target.value; setCertifications(newC); }} required>
+                              <option value="" disabled>Select platform</option>
+                              <option value="Coursera">Coursera</option>
+                              <option value="Udemy">Udemy</option>
+                              <option value="edX">edX</option>
+                              <option value="NPTEL">NPTEL</option>
+                              <option value="Pluralsight">Pluralsight</option>
+                              <option value="LinkedIn Learning">LinkedIn Learning</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label>Domain</label>
+                            <select className="form-input" value={cert.domain} onChange={(e) => { const newC = [...certifications]; newC[idx].domain = e.target.value; setCertifications(newC); }} required>
+                              <option value="" disabled>Select domain</option>
+                              <option value="Web Development">Web Development</option>
+                              <option value="Machine Learning">Machine Learning</option>
+                              <option value="Cloud">Cloud Compute</option>
+                              <option value="Data Science">Data Science</option>
+                              <option value="Security">Security</option>
+                              <option value="Management">Management</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="action-row pt-6 border-t border-slate-100">
                     <button
-                      key={interest}
-                      type="button"
-                      className={`skill-chip interest-chip ${selectedInterests.includes(interest) ? 'selected' : ''}`}
-                      onClick={() => toggleItem(interest, selectedInterests, setSelectedInterests)}
+                      className={`predict-btn step2 ${isPredicting ? 'disabled' : ''}`}
+                      disabled={isPredicting || !isStep2Valid()}
+                      onClick={handlePredict}
                     >
-                      {interest}
+                      <Sparkles size={20} className="hover:animate-spin" />
+                      Predict Career Outcomes
                     </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="form-section-title experience-title">Experience & Projects</div>
-
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Years of Experience</label>
-                  <input type="number" min="0" max="50" className="form-input" placeholder="e.g. 2" value={experience} onChange={(e) => setExperience(e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Number of Projects</label>
-                  <input type="number" min="0" max="20" className="form-input" placeholder="e.g. 3" value={projectsCount} onChange={(e) => setProjectsCount(e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Number of Internships</label>
-                  <input type="number" min="0" max="10" className="form-input" placeholder="e.g. 1" value={internshipsCount} onChange={(e) => setInternshipsCount(e.target.value)} />
-                </div>
-              </div>
-
-              {projects.length > 0 && (
-                <div className="dynamic-inputs-section reveal">
-                  <h4 className="dynamic-section-title">Project Details</h4>
-                  {projects.map((proj, idx) => (
-                    <div className="form-grid" key={`proj-${idx}`}>
-                      <div className="form-group">
-                        <label>Project {idx + 1} Name</label>
-                        <input type="text" className="form-input" placeholder="e.g. E-Commerce App" value={proj.name} onChange={(e) => {
-                          const newP = [...projects];
-                          newP[idx].name = e.target.value;
-                          setProjects(newP);
-                        }} />
-                      </div>
-                      <div className="form-group">
-                        <label>Tech Used <span className="text-muted">(comma separated)</span></label>
-                        <input type="text" className="form-input" placeholder="e.g. React, Node.js" value={proj.tech} onChange={(e) => {
-                          const newP = [...projects];
-                          newP[idx].tech = e.target.value;
-                          setProjects(newP);
-                        }} />
-                      </div>
-                    </div>
-                  ))}
+                  </div>
                 </div>
               )}
-
-              {internships.length > 0 && (
-                <div className="dynamic-inputs-section reveal">
-                  <h4 className="dynamic-section-title">Internship Details</h4>
-                  {internships.map((int, idx) => (
-                    <div className="form-grid" key={`int-${idx}`}>
-                      <div className="form-group">
-                        <label>Company {idx + 1}</label>
-                        <input type="text" className="form-input" placeholder="e.g. Google" value={int.company} onChange={(e) => {
-                          const newI = [...internships];
-                          newI[idx].company = e.target.value;
-                          setInternships(newI);
-                        }} />
-                      </div>
-                      <div className="form-group">
-                        <label>Role</label>
-                        <input type="text" className="form-input" placeholder="e.g. Frontend Intern" value={int.role} onChange={(e) => {
-                          const newI = [...internships];
-                          newI[idx].role = e.target.value;
-                          setInternships(newI);
-                        }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <button
-                className={`predict-btn ${isPredicting ? 'predicting' : ''}`}
-                disabled={isPredicting || !isStep2Valid()}
-                onClick={handlePredict}
-              >
-                {isPredicting ? (
-                  <>
-                    <BrainCircuit className="spin-icon" size={20} />
-                    Analyzing Profile...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={20} />
-                    Predict Career Path
-                  </>
-                )}
-              </button>
             </div>
-          )}
+          </div>
+
+          {/* Sidebar Profiler Preview that scales gracefully alongside Step 1 & 2 */}
+          <div className="sidebar-column hidden lg:block">
+            <div className="preview-panel reveal min-h-[400px]">
+              <h3 className="preview-title"><User size={20} /> Your Profile Preview</h3>
+
+              <div className="preview-card bg-white p-4 rounded-xl shadow-sm mb-4 border border-slate-100">
+                <span className="preview-label text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 block">Academic Background</span>
+                <span className="preview-value text-slate-800 font-semibold text-lg">
+                  {degree ? `${degree} ${specialization ? `in ${specialization}` : ''}` : <span className="text-muted font-normal text-sm">Not selected</span>}
+                </span>
+                {academicScore && <div className="mt-3 text-sm font-semibold text-blue-600 border-t border-slate-100 pt-3">{isCgpa ? 'CGPA' : 'Score'}: {academicScore}</div>}
+              </div>
+
+              <div className="preview-card bg-white p-4 rounded-xl shadow-sm mb-4 border border-slate-100">
+                <span className="preview-label text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Core Subjects</span>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {coreSubjects.filter(sub => sub.grade !== '').length > 0 ? (
+                    coreSubjects
+                      .filter(sub => sub.grade !== '')
+                      .map(sub => (
+                        <span key={sub.name} className="px-3 py-1.5 bg-red-50/80 text-red-700 rounded-full text-xs font-bold shadow-sm border border-red-100">
+                          {sub.name}: {sub.grade}
+                        </span>
+                      ))
+                  ) : (
+                    <span className="text-slate-400 text-sm">None graded</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="preview-card bg-white p-4 rounded-xl shadow-sm mb-4 border border-slate-100">
+                <span className="preview-label text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Core Skills ({selectedCoreSkills.length})</span>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedCoreSkills.length > 0 ? selectedCoreSkills.map(s => <span key={s} className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 shadow-sm rounded-full text-xs font-bold">{s}</span>) : <span className="text-slate-400 text-sm">None selected</span>}
+                </div>
+              </div>
+
+              <div className="preview-card bg-white p-4 rounded-xl shadow-sm mb-4 border border-slate-100">
+                <span className="preview-label text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Experience & Portfolio</span>
+                <div className="flex flex-col gap-3 mt-2">
+                  <span className="text-sm font-semibold text-slate-700 bg-slate-50 px-3 py-2 rounded-lg inline-flex items-center w-fit border border-slate-100">{experience ? `${experience} Years Expr.` : 'No professional experience (Fresher)'}</span>
+                  {projects.length > 0 && <span className="text-sm text-slate-700 bg-slate-50 px-3 py-2 rounded-lg inline-flex items-center gap-2 border border-slate-100"><Briefcase size={16} className="text-blue-500" /> {projects.length} Applied Projects</span>}
+                  {internships.length > 0 && <span className="text-sm text-slate-700 bg-slate-50 px-3 py-2 rounded-lg inline-flex items-center gap-2 border border-slate-100"><Building2 size={16} className="text-amber-500" /> {internships.length} Internships</span>}
+                </div>
+              </div>
+
+              <div className="mt-8 text-center px-4 py-8 bg-white/50 border-2 border-dashed border-red-200 rounded-xl shadow-inner">
+                <div className="flex flex-col items-center gap-3 text-slate-400">
+                  <Target size={32} className="opacity-50" />
+                  <span className="text-sm font-medium">Complete your profile to unlock precise career predictions.</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-
-        {/* Results Panel */}
-        <div className="result-column">
-          {result ? (
-            <div className="result-card glass-panel reveal">
-              <div className="result-header">
-                <div className="ai-badge">
-                  <Sparkles size={16} />
-                  AI Prediction Result
-                </div>
-              </div>
-
-              <div className="predicted-role-section">
-                <h4 className="result-label">Top Recommended Career</h4>
-                <h2 className="predicted-role text-gradient">{result.role}</h2>
-                <div className="confidence-pill">{result.confidence}% Match</div>
-              </div>
-
-              {/* Top 3 Alternative Predictions */}
-              {result.predictions && result.predictions.length > 1 && (
-                <div className="alternative-roles">
-                  <h4 className="alt-title">Other Strong Matches</h4>
-                  <div className="alt-roles-list">
-                    {result.predictions.slice(1).map((pred, i) => (
-                      <div key={i} className="alt-role-item">
-                        <div className="alt-role-info">
-                          {i === 0 ? <Medal size={16} className="silver-medal" /> : <Medal size={16} className="bronze-medal" />}
-                          <span className="alt-role-name">{pred.role}</span>
-                        </div>
-                        <div className="alt-role-score">
-                          <div className="score-bar-bg">
-                            <div className="score-bar-fill" style={{ width: `${pred.score}%` }}></div>
-                          </div>
-                          <span className="score-text-mini">{pred.score}%</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="explanation-section">
-                <div className="explanation-bubble">
-                  <Info size={16} className="explanation-icon" />
-                  <div className="explanation-text">
-                    {result.explanation.split('\n').map((line, i) => (
-                      <p key={i}>{line}</p>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="next-steps">
-                <h4 className="next-steps-title">Recommended Next Steps</h4>
-                <ul className="action-list">
-                  {result.actions.map((action, i) => (
-                    <li key={i}><CheckCircle2 size={16} className="text-cyan-400" /> {action}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="explore-insights-section mt-8 pt-6 border-t border-slate-100">
-                <h4 className="explore-title text-center text-slate-800 font-bold mb-4">Explore More Insights</h4>
-                <div className="insights-grid">
-                  <Link to="/dashboard/skills" className="insight-card">
-                    <div className="insight-icon bg-purple-100 text-purple-600"><Target size={20} /></div>
-                    <div className="insight-info">
-                      <h5>Skill Gap Analysis</h5>
-                      <p>Identify missing skills & core tools</p>
-                    </div>
-                  </Link>
-
-                  <Link to="/dashboard/trends" className="insight-card">
-                    <div className="insight-icon bg-emerald-100 text-emerald-600"><TrendingUp size={20} /></div>
-                    <div className="insight-info">
-                      <h5>Job Market Trends</h5>
-                      <p>View hiring demand & salaries</p>
-                    </div>
-                  </Link>
-
-                  <Link to="/dashboard/roadmap" className="insight-card">
-                    <div className="insight-icon bg-blue-100 text-blue-600"><Compass size={20} /></div>
-                    <div className="insight-info">
-                      <h5>Career Roadmap</h5>
-                      <p>Generate a step-by-step timeline</p>
-                    </div>
-                  </Link>
-
-                  <Link to="/dashboard/courses" className="insight-card">
-                    <div className="insight-icon bg-amber-100 text-amber-600"><BookOpen size={20} /></div>
-                    <div className="insight-info">
-                      <h5>Recommended Courses</h5>
-                      <p>Upskill with targeted learning</p>
-                    </div>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="preview-panel glass-panel reveal">
-              <div className="preview-header">
-                <User size={24} className="text-cyan-400" />
-                <h3>Live Profile Preview</h3>
-              </div>
-              <div className="preview-content">
-                <div className="preview-item">
-                  <span className="preview-label">Academic Path</span>
-                  <div className="preview-value">
-                    {degree ? <span className="highlight-text">{degree} {specialization && `in ${specialization}`}</span> : <span className="text-muted">Not selected yet</span>}
-                  </div>
-                </div>
-
-                <div className="preview-item">
-                  <span className="preview-label">Skills & Tools <span className="count-badge">{selectedCoreSkills.length + selectedTools.length + selectedOptionalSkills.length}</span></span>
-                  <div className="preview-skills">
-                    {(selectedCoreSkills.length > 0 || selectedTools.length > 0 || selectedOptionalSkills.length > 0) ? (
-                      <>
-                        {selectedCoreSkills.map(s => <span key={s} className="preview-micro-chip">{s}</span>)}
-                        {selectedTools.map(s => <span key={s} className="preview-micro-chip" style={{ background: 'rgba(2, 132, 199, 0.1)', color: '#0284c7', border: '1px solid rgba(2, 132, 199, 0.2)' }}>{s}</span>)}
-                        {selectedOptionalSkills.map(s => <span key={s} className="preview-micro-chip" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' }}>{s}</span>)}
-                      </>
-                    ) : (
-                      <span className="text-muted text-sm">No skills added</span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="preview-item">
-                  <span className="preview-label">Experience</span>
-                  <div className="preview-value">
-                    {experience > 0 ? <span className="highlight-text">{experience} Years</span> : <span className="text-muted">Fresher</span>}
-                    {projectsCount > 0 && <span className="preview-stat">• {projectsCount} Projects</span>}
-                    {internshipsCount > 0 && <span className="preview-stat">• {internshipsCount} Internships</span>}
-                  </div>
-                </div>
-
-                <div className="preview-item">
-                  <span className="preview-label">Career Interests <span className="count-badge">{selectedInterests.length}</span></span>
-                  <div className="preview-interests">
-                    {selectedInterests.length > 0 ? (
-                      selectedInterests.map(i => <span key={i} className="preview-micro-chip interest">{i}</span>)
-                    ) : (
-                      <span className="text-muted text-sm">No interests added</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="preview-footer">
-                {isPredicting ? (
-                  <>
-                    <Sparkles size={28} className="text-cyan-400 spin-icon" />
-                    <p className="predicting-text">AI is analyzing your profile...</p>
-                  </>
-                ) : error ? (
-                  <>
-                    <Info size={28} className="text-red-400" />
-                    <p className="error-text">Prediction Error: {error}</p>
-                    <button className="retry-mini-btn" onClick={handlePredict}>Try Again</button>
-                  </>
-                ) : (
-                  <>
-                    <BrainCircuit size={28} className="text-purple-400 spin-slow" />
-                    <p>AI is waiting for your complete input...</p>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

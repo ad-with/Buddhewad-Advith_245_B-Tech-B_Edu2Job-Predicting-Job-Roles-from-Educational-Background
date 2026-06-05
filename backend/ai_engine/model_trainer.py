@@ -2,102 +2,146 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import accuracy_score
 import joblib
 import os
 import random
+import re
+
+# Import shared utils and classes
+from utils import (
+    SYNERGY_MATRIX, SPECIALIZATION_MAPPING, ROLE_TO_DOMAIN,
+    FullFeaturePipeline, JobFeatureTransformer
+)
+
+# Set base directory to the backend folder
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 # Setting seeds for reproducibility
 np.random.seed(42)
 random.seed(42)
 
-def generate_synthetic_data(num_samples=4000):
-    role_to_edu = {
-        # Core Tech
-        "Data Scientist": {"degrees": ["B.Tech", "M.Tech", "MCA", "M.Sc", "PhD"], "specializations": ["Data Science", "Artificial Intelligence", "Computer Science"]},
-        "Software Engineer": {"degrees": ["B.Tech", "BCA", "MCA", "M.Tech"], "specializations": ["Computer Science", "Information Technology", "AI"]},
-        "DevOps Engineer": {"degrees": ["B.Tech", "MCA", "M.Tech"], "specializations": ["Computer Science", "Information Technology", "Electronics"]},
-        "Frontend Developer": {"degrees": ["B.Tech", "BCA", "B.Sc", "Diploma"], "specializations": ["Computer Science", "Information Technology", "Design"]},
-        "Backend Developer": {"degrees": ["B.Tech", "MCA", "M.Tech", "BCA"], "specializations": ["Computer Science", "Information Technology"]},
-        "UX Designer": {"degrees": ["B.Sc", "BA", "B.Tech", "Diploma"], "specializations": ["Design", "Information Technology", "CS"]},
-        "Product Manager": {"degrees": ["MBA", "B.Tech"], "specializations": ["Business Administration", "Marketing", "Computer Science"]},
-        
-        # Civil / Mechanical / Core Engg
-        "Civil Engineer": {"degrees": ["B.Tech", "M.Tech", "Diploma"], "specializations": ["Civil", "Civil Engineering"]},
-        "Site Engineer": {"degrees": ["B.Tech", "Diploma"], "specializations": ["Civil", "Civil Engineering", "Construction"]},
-        "Structural Engineer": {"degrees": ["B.Tech", "M.Tech"], "specializations": ["Civil", "Civil Engineering", "Structural Engineering"]},
-        "Construction Manager": {"degrees": ["B.Tech", "MBA"], "specializations": ["Civil", "Civil Engineering", "Construction Management"]},
-        "Mechanical Engineer": {"degrees": ["B.Tech", "M.Tech", "Diploma"], "specializations": ["Mechanical", "Mechanical Engineering"]},
-        
-        # Commerce / Arts / Science
-        "Accountant": {"degrees": ["B.Com", "M.Com", "MBA"], "specializations": ["Accounting", "Finance", "Commerce"]},
-        "Financial Analyst": {"degrees": ["B.Com", "M.Com", "MBA", "BBA"], "specializations": ["Finance", "Accounting", "Economics"]},
-        "Economist": {"degrees": ["BA", "MA", "B.Sc", "M.Sc"], "specializations": ["Economics"]},
-        "Research Analyst": {"degrees": ["BA", "B.Sc", "B.Com", "MA", "M.Sc"], "specializations": ["Economics", "Statistics", "Mathematics", "Business"]},
-        "Teaching Professional": {"degrees": ["BA", "B.Sc", "B.Com", "MA", "M.Sc", "PhD"], "specializations": ["Education", "Physics", "Maths", "English", "History"]},
-        "Data Analyst": {"degrees": ["B.Sc", "B.Tech", "BCA", "B.Com"], "specializations": ["Maths", "Mathematics", "Statistics", "Computer Science"]},
-        
-        # Management
-        "Marketing Specialist": {"degrees": ["MBA", "BBA", "BA", "B.Com"], "specializations": ["Marketing", "Economics", "Communications"]},
-        "Business Analyst": {"degrees": ["BBA", "MBA", "B.Tech", "B.Com"], "specializations": ["Business Administration", "Finance", "Information Technology"]},
-        "HR Manager": {"degrees": ["MBA", "BBA", "BA"], "specializations": ["Human Resources", "Business Administration"]}
-    }
-    
-    roles = list(role_to_edu.keys())
-    
-    role_to_skills = {
-        "Data Scientist": ["Python", "Machine Learning", "Data Analysis", "SQL", "Pandas", "Scikit-Learn", "Deep Learning", "Statistics", "TensorFlow", "NumPy", "NLP"],
-        "Software Engineer": ["Java", "C++", "C#", "Python", "Algorithms", "Data Structures", "System Design", "Git", "Go", "Rust"],
-        "Product Manager": ["Roadmapping", "Agile", "Scrum", "Market Research", "Product Strategy", "Jira", "Stakeholder Management"],
-        "UX Designer": ["Figma", "UI/UX", "Wireframing", "Prototyping", "User Testing", "Adobe XD", "Design Systems"],
-        "DevOps Engineer": ["AWS", "Docker", "Kubernetes", "CI/CD", "Linux", "Terraform", "Jenkins"],
-        "Frontend Developer": ["HTML", "CSS", "JavaScript", "React", "Vue", "Angular", "TypeScript", "Tailwind", "Next.js"],
-        "Backend Developer": ["Python", "Node.js", "Java", "SQL", "MongoDB", "REST APIs", "GraphQL", "Docker", "PostgreSQL", "Django", "FastAPI"],
-        "Marketing Specialist": ["SEO", "Content Strategy", "Digital Marketing", "Google Analytics", "Social Media", "Copywriting"],
-        "HR Manager": ["Recruiting", "Employee Relations", "Onboarding", "Talent Acquisition", "Communication"],
-        "Accountant": ["Accounting", "Tally", "GST", "Advanced Excel", "Finance", "Auditing", "Taxation"],
-        "Business Analyst": ["Data Visualization", "Tableau", "Power BI", "SQL", "Market Research", "Process Improvement", "Excel"],
-        "Civil Engineer": ["AutoCAD", "STAAD Pro", "Surveying", "Project Management", "Construction Materials", "Estimation"],
-        "Site Engineer": ["Site Management", "AutoCAD", "Quality Control", "Surveying", "Health & Safety"],
-        "Structural Engineer": ["STAAD Pro", "ETABS", "Structural Analysis", "AutoCAD", "Steel Design"],
-        "Construction Manager": ["Project Management", "Primavera P6", "MS Project", "Contract Management", "Cost Estimation"],
-        "Mechanical Engineer": ["SolidWorks", "AutoCAD", "Thermodynamics", "Manufacturing", "CAD/CAM", "Ansys"],
-        "Financial Analyst": ["Financial Modeling", "Excel", "Valuation", "Accounting", "Data Analysis", "Bloomberg"],
-        "Economist": ["Data Analysis", "Econometrics", "Stata", "R", "SAS", "Economic Research", "Statistics"],
-        "Research Analyst": ["Research", "Data Analysis", "Report Writing", "Market Research", "SPSS", "Excel"],
-        "Teaching Professional": ["Curriculum Development", "Public Speaking", "Communication", "Lesson Planning", "Mentoring"],
-        "Data Analyst": ["SQL", "Excel", "Tableau", "Power BI", "Data Visualization", "Python", "Statistics"]
-    }
-    
+def generate_synthetic_data(num_samples=6000):
+    """
+    Generates domain-aligned synthetic data with core subjects, projects, and internships.
+    """
+    roles = list(ROLE_TO_DOMAIN.keys())
     data = []
     
-    # Generate balanced samples
+    # Pre-defined pools for projects and certifications by domain
+    domain_pools = {
+        "AI/Data": {
+            "projects": [
+                "Stock Price Predictor: Python, TensorFlow, LSTM",
+                "Customer Segmentation: Python, Scikit-learn, K-means",
+                "NLP Chatbot: Python, NLTK, Flask",
+                "Disease Detection: Deep Learning, PyTorch, CNN"
+            ],
+            "internships": ["Machine Learning Engineer", "Data Scientist", "Data Analyst"],
+            "certs": ["Google Data Analytics", "DeepLearning.AI ML Specialization", "IBM Data Science"]
+        },
+        "Tech": {
+            "projects": [
+                "E-commerce API: Node.js, Express, MongoDB",
+                "Task Management App: React, Redux, Firebase",
+                "DevOps Pipeline: Jenkins, Docker, Kubernetes",
+                "Portfolio Website: HTML, CSS, JavaScript, Tailwind"
+            ],
+            "internships": ["Software Developer", "Frontend Developer", "Backend Developer", "DevOps Engineer"],
+            "certs": ["AWS Solutions Architect", "Meta Front-End Developer", "Full Stack Open"]
+        },
+        "Civil": {
+            "projects": [
+                "Bridge Design: AutoCAD, Structural Analysis",
+                "Smart City Drainage: STAAD Pro, Surveying",
+                "Residential Complex Planning: Revit, Cost Estimation"
+            ],
+            "internships": ["Site Engineer", "Structural Intern", "Quantity Surveyor"],
+            "certs": ["AutoCAD Professional", "STAAD Pro Certification"]
+        },
+        "Finance": {
+            "projects": [
+                "Portfolio Optimization: Python, Excel, Statistics",
+                "GST Compliance Tool: Tally, SQL",
+                "Risk Analysis Report: Financial Modeling, Valuation"
+            ],
+            "internships": ["Financial Analyst", "Audit Assistant", "Tax Consultant"],
+            "certs": ["CFA Level 1", "Tally Prime Professional"]
+        },
+        "Management": {
+            "projects": [
+                "Market Entry Strategy: Research, Strategy",
+                "Agile Product Launch: Jira, Scrum",
+                "Brand Revitalization: Marketing, Social Media"
+            ],
+            "internships": ["Product Management", "Marketing Intern", "Business Analyst"],
+            "certs": ["Google Project Management", "HubSpot Content Marketing"]
+        }
+    }
+
     samples_per_role = num_samples // len(roles)
     
     for role in roles:
+        domain = ROLE_TO_DOMAIN[role]
         for _ in range(samples_per_role):
-            edu_info = role_to_edu[role]
-            degree = random.choice(edu_info["degrees"])
-            specialization = random.choice(edu_info["specializations"])
+            # Select degree & specialization logically
+            if domain in ["AI/Data", "Tech"]:
+                degree = random.choice(["B.Tech", "M.Tech", "MCA", "BCA"])
+                specialization = random.choice(["Computer Science", "Artificial Intelligence", "Data Science", "Information Technology"])
+            elif domain == "Civil":
+                degree = random.choice(["B.Tech", "M.Tech", "Diploma"])
+                specialization = "Civil Engineering"
+            elif domain == "Finance":
+                degree = random.choice(["B.Com", "M.Com", "MBA", "BBA"])
+                specialization = "Finance"
+            elif domain == "Marketing":
+                degree = random.choice(["MBA", "BBA", "BA"])
+                specialization = "Marketing"
+            else:
+                degree = random.choice(["B.Sc", "M.Sc", "BA", "MA"])
+                specialization = random.choice(list(SPECIALIZATION_MAPPING.keys()))
+
+            # 1. CORE SUBJECTS (Strict domain mapping)
+            spec_info = SPECIALIZATION_MAPPING.get(specialization, {'subjects': ["General Subject"], 'skills': ["Communication"]})
+            subjects_pool = spec_info['subjects']
+            num_subs = random.randint(3, 5)
+            selected_subs = random.sample(subjects_pool, min(num_subs, len(subjects_pool)))
             
-            # Skills
-            num_skills = random.randint(3, 8)
-            skills_pool = role_to_skills[role]
-            skills = ", ".join(random.sample(skills_pool, min(num_skills, len(skills_pool))))
+            sub_grades = []
+            for sub in selected_subs:
+                if role in SYNERGY_MATRIX.get(sub, []):
+                    grade = random.choice(['A+', 'A', 'A-'])
+                else:
+                    grade = random.choice(['A', 'A-', 'B+', 'B', 'C'])
+                sub_grades.append(f"{sub}:{grade}")
             
-            # Academic scores
-            academic_score = round(random.uniform(6.0, 9.8), 2) # Assume CGPA for synthetic
-            marks_10th = round(random.uniform(60, 98), 1)
-            marks_12th = round(random.uniform(60, 98), 1)
+            core_subjects_str = ",".join(sub_grades)
+
+            # 2. PROJECTS & INTERNSHIPS
+            pool = domain_pools.get(domain, domain_pools["Tech"])
+            proj_list = random.sample(pool["projects"], random.randint(1, 2))
+            projects_str = "; ".join(proj_list)
             
-            experience = random.randint(0, 12)
-            if degree in ["MBA", "M.Tech", "MCA", "M.Sc", "M.Com", "PhD"]:
-                 experience = random.randint(1, 15)
-                
+            num_internships = random.randint(0, 2)
+            internship_entries = []
+            for _ in range(num_internships):
+                int_role = random.choice(pool["internships"])
+                duration = random.randint(1, 6)
+                internship_entries.append(f"{int_role}:{duration} months")
+            internships_str = "; ".join(internship_entries)
+            
+            # 3. SKILLS
+            role_skills_pool = spec_info['skills']
+            skills = ", ".join(random.sample(role_skills_pool, random.randint(3, len(role_skills_pool))))
+
+            # 4. SCORES & EXPERIENCE
+            academic_score = round(random.uniform(7.0, 9.8), 2)
+            marks_10th = round(random.uniform(70, 98), 1)
+            marks_12th = round(random.uniform(70, 98), 1)
+            experience = random.randint(0, 10)
+
             data.append({
                 "degree": degree,
                 "specialization": specialization,
@@ -105,56 +149,59 @@ def generate_synthetic_data(num_samples=4000):
                 "marks_10th": marks_10th,
                 "marks_12th": marks_12th,
                 "skills": skills,
+                "core_subjects": core_subjects_str,
+                "projects": projects_str,
+                "internships": internships_str,
                 "experience_years": experience,
                 "role": role
             })
-        
+    
     df = pd.DataFrame(data)
-    # Shuffle the dataset
     df = df.sample(frac=1, random_state=42).reset_index(drop=True)
-    os.makedirs('data', exist_ok=True)
-    df.to_csv('data/job_data.csv', index=False)
+    
+    data_dir = os.path.join(BASE_DIR, 'data')
+    os.makedirs(data_dir, exist_ok=True)
+    csv_path = os.path.join(data_dir, 'job_data.csv')
+    df.to_csv(csv_path, index=False)
+    print(f"Dataset generated with {len(df)} rows at {csv_path}")
     return df
 
 def train_job_model():
-    print("Generating enriched academic-driven synthetic data...")
-    df = generate_synthetic_data(5000) # Ensure enough data for balanced classes
+    print("Beginning multi-modal model training pipeline...")
+    df = generate_synthetic_data(8000)
     
-    X = df[['degree', 'specialization', 'academic_score', 'marks_10th', 'marks_12th', 'skills', 'experience_years']]
+    # Columns to include in X
+    cols = ['degree', 'specialization', 'academic_score', 'marks_10th', 'marks_12th', 'skills', 'core_subjects', 'projects', 'internships', 'experience_years']
+    X = df[cols]
     y = df['role']
     
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=42)
     
-    # Preprocessing
-    categorical_features = ['degree', 'specialization']
-    text_features = 'skills'
-    numeric_features = ['academic_score', 'marks_10th', 'marks_12th', 'experience_years']
-    
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ('num', StandardScaler(), numeric_features),
-            ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features),
-            ('text', CountVectorizer(binary=True), text_features)
-        ])
-    
-    pipeline = Pipeline(steps=[
-        ('preprocessor', preprocessor),
-        # Using Gradient Boosting with optimized parameters to avoid overfitting and provide smoother probabilities
-        ('classifier', GradientBoostingClassifier(n_estimators=100, learning_rate=0.1, max_depth=4, subsample=0.8, random_state=42))
+    # Define Model Pipeline using shared FullFeaturePipeline
+    model_pipeline = Pipeline(steps=[
+        ('features', FullFeaturePipeline()),
+        ('classifier', GradientBoostingClassifier(
+            n_estimators=150, 
+            learning_rate=0.08, 
+            max_depth=5, 
+            subsample=0.8, 
+            random_state=42
+        ))
     ])
     
-    print("Training the Gradient Boosting model for higher precision...")
-    pipeline.fit(X_train, y_train)
+    print("Training Gradient Boosting Classifier...")
+    model_pipeline.fit(X_train, y_train)
     
-    y_pred = pipeline.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
-    print(f"Model accuracy: {accuracy:.4f}")
+    y_pred = model_pipeline.predict(X_test)
+    print(f"Model Training Complete. Accuracy: {accuracy_score(y_test, y_pred):.4f}")
     
-    pipeline_dir = 'model_artifacts'
-    os.makedirs(pipeline_dir, exist_ok=True)
-    model_path = os.path.join(pipeline_dir, 'job_predictor.joblib')
-    joblib.dump(pipeline, model_path)
-    print(f"Model successfully saved to {model_path}")
+    # Save artifacts
+    model_dir = os.path.join(BASE_DIR, 'model_artifacts')
+    os.makedirs(model_dir, exist_ok=True)
+    model_path = os.path.join(model_dir, 'job_predictor.joblib')
+    joblib.dump(model_pipeline, model_path)
+    print(f"Model successfully saved to '{model_path}'.")
+
 
 if __name__ == "__main__":
     train_job_model()

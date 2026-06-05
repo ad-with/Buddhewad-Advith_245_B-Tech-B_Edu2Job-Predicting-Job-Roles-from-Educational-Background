@@ -11,7 +11,7 @@ export const domainDistribution = [
 
 export const roleAnalytics = {
   "Data Scientist": {
-    salary: "$145k",
+    salary: "₹145k",
     growth: "+32%",
     color: "#06b6d4",
     demandTrend: [
@@ -25,7 +25,7 @@ export const roleAnalytics = {
     ]
   },
   "Software Engineer": {
-    salary: "$125k",
+    salary: "₹125k",
     growth: "+15%",
     color: "#3b82f6",
     demandTrend: [
@@ -39,7 +39,7 @@ export const roleAnalytics = {
     ]
   },
   "Product Manager": {
-    salary: "$130k",
+    salary: "₹130k",
     growth: "+18%",
     color: "#f59e0b",
     demandTrend: [
@@ -53,7 +53,7 @@ export const roleAnalytics = {
     ]
   },
   "UX Designer": {
-    salary: "$105k",
+    salary: "₹105k",
     growth: "+14%",
     color: "#10b981",
     demandTrend: [
@@ -67,7 +67,7 @@ export const roleAnalytics = {
     ]
   },
   "DevOps Engineer": {
-    salary: "$140k",
+    salary: "₹140k",
     growth: "+28%",
     color: "#ec4899",
     demandTrend: [
@@ -81,7 +81,7 @@ export const roleAnalytics = {
     ]
   },
   "Frontend Developer": {
-    salary: "$115k",
+    salary: "₹115k",
     growth: "+20%",
     color: "#06b6d4",
     demandTrend: [
@@ -95,7 +95,7 @@ export const roleAnalytics = {
     ]
   },
   "Backend Developer": {
-    salary: "$135k",
+    salary: "₹135k",
     growth: "+22%",
     color: "#8b5cf6",
     demandTrend: [
@@ -109,7 +109,7 @@ export const roleAnalytics = {
     ]
   },
   "Marketing Specialist": {
-    salary: "$85k",
+    salary: "₹85k",
     growth: "+10%",
     color: "#f59e0b",
     demandTrend: [
@@ -123,7 +123,7 @@ export const roleAnalytics = {
     ]
   },
   "HR Manager": {
-    salary: "$95k",
+    salary: "₹95k",
     growth: "+8%",
     color: "#10b981",
     demandTrend: [

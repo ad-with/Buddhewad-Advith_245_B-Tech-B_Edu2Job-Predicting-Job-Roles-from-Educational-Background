@@ -1,0 +1,445 @@
+.admin-analytics-page {
+  padding: 2rem;
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1rem;
+  cursor: pointer;
+  width: fit-content;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+.analytics-top-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+/* Glass Card Global */
+.glass-card {
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.glass-card h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  color: #e2e8f0;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Profile Card */
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.profile-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+}
+
+.profile-info h2 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.5rem;
+}
+
+.profile-email {
+  color: #94a3b8;
+  margin: 0 0 0.75rem 0;
+  font-size: 0.95rem;
+}
+
+.profile-badges {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.role-badge {
+  background: rgba(139, 92, 246, 0.15);
+  color: #c084fc;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.join-badge {
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+}
+
+.profile-stats {
+  display: flex;
+  gap: 2rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-label {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+/* Readiness Card */
+.readiness-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.circular-progress-container {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+
+.readiness-chart {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.readiness-chart .circle-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.05);
+  stroke-width: 2.5;
+}
+
+.readiness-chart .circle {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  animation: progress 1s ease-out forwards;
+  stroke: url(#gradientReady);
+}
+
+.progress-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: baseline;
+  color: #f8fafc;
+}
+
+.progress-value .number {
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.progress-value .percent {
+  font-size: 1.2rem;
+  color: #94a3b8;
+}
+
+/* Strengths Card */
+.strengths-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.strengths-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #e2e8f0;
+  font-size: 0.95rem;
+}
+
+.roadmap-mini {
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.roadmap-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.mini-progress-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.mini-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+  border-radius: 9999px;
+}
+
+/* AI Summary Card */
+.ai-summary-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.ai-glow {
+  position: absolute;
+  top: -50px;
+  left: -50px;
+  width: 150px;
+  height: 150px;
+  background: rgba(139, 92, 246, 0.15);
+  filter: blur(40px);
+  z-index: 0;
+}
+
+.ai-icon {
+  color: #a855f7;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+}
+
+.ai-content {
+  z-index: 1;
+}
+
+.ai-content h3 {
+  margin: 0 0 0.5rem 0;
+  color: #c084fc;
+  font-size: 1.1rem;
+}
+
+.ai-content p {
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* Charts Grid */
+.analytics-charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+
+.chart-container {
+  height: 250px;
+  width: 100%;
+}
+
+/* Skills Analytics */
+.skills-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.skill-category {
+  margin-bottom: 1.5rem;
+}
+
+.skill-category h5 {
+  margin: 0 0 0.75rem 0;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip {
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.match-chip {
+  background: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.miss-chip {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.empty-text {
+  color: #64748b;
+  font-style: italic;
+}
+
+/* History Card */
+.history-card table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.history-card th {
+  padding: 1rem;
+  color: #94a3b8;
+  font-weight: 500;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(15, 23, 42, 0.2);
+}
+
+.history-card td {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+}
+
+.conf-badge {
+  padding: 0.3rem 0.8rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.miss-text {
+  color: #f87171;
+}
+
+.empty-history {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #94a3b8;
+}
+
+/* Skeleton Loaders */
+.skeleton-page .skel-header {
+  height: 150px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+}
+
+.skeleton-page .skel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.skeleton-page .skel-card {
+  height: 300px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+}
+
+.skeleton-page .skel-table {
+  height: 400px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+}
+
+/* Gradient SVG definition for circular chart */
+svg.circular-chart {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 1200px) {
+  .analytics-charts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .analytics-top-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .analytics-charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .skills-grid {
+    grid-template-columns: 1fr;
+  }
+}

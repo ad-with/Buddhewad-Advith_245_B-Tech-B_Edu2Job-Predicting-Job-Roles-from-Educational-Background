@@ -18,9 +18,10 @@ export const isOptionalSkill = (skill) => OPTIONAL_SKILLS.some(o => o.toLowerCas
 export const SKILLS_DATA = {
   "Software Engineer": [
     "Python", "Java", "C++", "C#", "JavaScript", "TypeScript", "Go", "Rust", 
+    "HTML5", "CSS3", "React", "Node.js",
     "Data Structures", "Algorithms", "System Design", "Object-Oriented Programming (OOP)",
     "REST APIs", "Microservices", "Design Patterns", "Test-Driven Development (TDD)", "Agile/Scrum",
-    "React", "Node.js", "Git", "SQL", "MongoDB", "Docker", "Kubernetes", "AWS", "CI/CD"
+    "Git", "SQL", "MongoDB", "Docker", "Kubernetes", "AWS", "CI/CD"
   ],
   "Frontend Developer": [
     "HTML5", "CSS3", "JavaScript", "React", "Vue.js", "Angular", "TypeScript",
@@ -28,10 +29,11 @@ export const SKILLS_DATA = {
     "State Management", "Redux", "Tailwind CSS", "Bootstrap", "Webpack", "Vite", "Figma", "Git", "Web Accessibility (a11y)"
   ],
   "Backend Developer": [
-    "Python", "Java", "Node.js", "Go", "C#", "Ruby", "PHP", 
+    "Python", "Java", "Node.js", "Go", "C#", "Ruby", "PHP", "JavaScript", "TypeScript",
+    "HTML5", "CSS3", "React",
     "Server-Side Logic", "API Design", "Data Modeling", "Database Management", 
     "SQL", "NoSQL", "PostgreSQL", "MySQL", "MongoDB", "Redis", "Authentication/Authorization",
-    "System Architecture", "Query Optimization", "Docker", "REST APIs", "GraphQL", "Linux"
+    "System Architecture", "Query Optimization", "Docker", "REST APIs", "GraphQL", "Linux", "Git", "Unit Testing"
   ],
   "DevOps Engineer": [
     "Linux", "Bash", "Shell Scripting", "Networking", "System Architecture", "CI/CD",

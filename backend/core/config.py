@@ -5,12 +5,10 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
     
-    # POSTGRES
-    POSTGRES_SERVER: str = "localhost"
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "postgres"
-    POSTGRES_DB: str = "edu2job"
-    SQLALCHEMY_DATABASE_URI: str = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}/{POSTGRES_DB}"
+    # Local MongoDB Connection
+    MONGO_URI: str = "mongodb://localhost:27017"
+    MONGO_DB: str = "edu2job"
+
     
     # JWT Auth
     SECRET_KEY: str = "a_very_secret_key_change_in_production_12345"

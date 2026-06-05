@@ -25,9 +25,9 @@ This report summarizes the major technical and design improvements implemented i
 ## Milestone 3: AI & Machine Learning Integration
 **Focus: Intelligent Prediction & Decision Systems**
 
-*   **Predictive AI (ML Layer)**: Integrated a **Random Forest Classifier** trained on a 2000-record dataset. Achieved ~99% accuracy in predicting career roles like Software Engineer, Data Scientist, and Frontend Developer.
+*   **Predictive AI (ML Layer)**: Integrated a **Gradient Boosting Classifier** trained on a 5000-record dataset. Achieved ~99% accuracy in predicting career roles like Software Engineer, Data Scientist, and Frontend Developer.
 *   **Generative AI (LLM Layer)**: Connected the **Google Gemini API** to generate human-like career insights and personalized progression strategies.
-*   **Feature Engineering**: Implemented robust data preprocessing, merging TF-IDF vectorization for skills with Categorical Encoding for academic backgrounds.
+*   **Feature Engineering**: Implemented robust data preprocessing, merging Binary Count Vectorization for skills with Categorical Encoding for academic backgrounds.
 *   **Intelligence APIs**: Deployed the `/api/v1/predict` endpoint and the Resume Analyzer module for real-time match scores and bridge-skill identification.
 
 ---

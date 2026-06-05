@@ -94,7 +94,7 @@ export default function JobMarketTrends() {
         </div>
 
         <div className="metric-panel glass-panel">
-          <h3>Salary Distribution (USD Thousands)</h3>
+          <h3>Salary Distribution (INR Lakhs)</h3>
           <p className="panel-desc">Median salary ranges across top technical roles.</p>
           <div className="chart-wrapper bar-chart">
             <ResponsiveContainer width="100%" height="100%">

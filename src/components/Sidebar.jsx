@@ -1,76 +1,57 @@
-import { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Briefcase, 
-  FileText, 
-  Target, 
-  TrendingUp, 
-  Map, 
-  GraduationCap, 
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  BrainCircuit,
-  LogOut
-} from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import React from 'react';
+import { NavLink } from 'react-router-dom';
 import './Sidebar.css';
 
-const navItems = [
-  { path: '/dashboard', name: 'Dashboard', icon: LayoutDashboard },
-  { path: '/dashboard/prediction', name: 'Job Prediction', icon: Briefcase },
-  { path: '/dashboard/resume', name: 'Resume Analyzer', icon: FileText },
-  { path: '/dashboard/skills', name: 'Skill Gap Analysis', icon: Target },
-  { path: '/dashboard/trends', name: 'Job Market Trends', icon: TrendingUp },
-  { path: '/dashboard/roadmap', name: 'Career Roadmap', icon: Map },
-  { path: '/dashboard/courses', name: 'Courses', icon: GraduationCap },
-  { path: '/dashboard/settings', name: 'Settings', icon: Settings },
-];
-
-export default function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
-  const location = useLocation();
-  const { user, logout } = useAuth();
+const Sidebar = ({ 
+  sidebarOpen, 
+  setSidebarOpen, 
+  activeMenu, 
+  setActiveMenu, 
+  onLogout 
+}) => {
+  const menuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: '📊', path: '/dashboard' },
+    { id: 'prediction', label: 'Job Prediction', icon: '🎯', path: '/dashboard/job-prediction' },
+    { id: 'resume', label: 'Resume Analyzer', icon: '📄', path: '/dashboard/resume' },
+    { id: 'skills', label: 'Skill Gap Analysis', icon: '🎓', path: '/dashboard/skill-gap' },
+    { id: 'trends', label: 'Job Market Trends', icon: '📈', path: '/dashboard/trends' },
+    { id: 'roadmap', label: 'Career Roadmap', icon: '🗺️', path: '/dashboard/career-roadmap' },
+    { id: 'courses', label: 'Courses', icon: '📚', path: '/dashboard/courses' },
+    { id: 'settings', label: 'Settings', icon: '⚙️', path: '/dashboard/settings' },
+  ];
 
   return (
-    <aside className={`sidebar glass-panel ${collapsed ? 'collapsed' : ''}`}>
+    <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
       <div className="sidebar-header">
-        <div className="logo-container">
-          <BrainCircuit className="logo-icon text-gradient" size={28} />
-          {!collapsed && <span className="logo-text text-gradient">Edu2Job</span>}
-        </div>
+        <div className="logo">Edu2Job</div>
         <button 
-          className="collapse-btn"
-          onClick={() => setCollapsed(!collapsed)}
+          className="toggle-btn"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
         >
-          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          ☰
         </button>
       </div>
 
       <nav className="sidebar-nav">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          
-          return (
-            <NavLink 
-              key={item.name} 
-              to={item.path} 
-              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-              title={collapsed ? item.name : undefined}
-            >
-              <Icon size={20} className="nav-icon" />
-              {!collapsed && <span className="nav-label">{item.name}</span>}
-            </NavLink>
-          );
-        })}
-        {user && (
-          <div className="nav-item" onClick={logout} style={{ cursor: 'pointer', marginTop: 'auto' }}>
-            <LogOut size={20} className="nav-icon text-gray-500" />
-            {!collapsed && <span className="nav-label">Logout</span>}
-          </div>
-        )}
+        {menuItems.map(item => (
+          <NavLink
+            key={item.id}
+            to={item.path}
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            onClick={() => setActiveMenu(item.id)}
+          >
+            <span className="nav-icon">{item.icon}</span>
+            {sidebarOpen && <span className="nav-label">{item.label}</span>}
+          </NavLink>
+        ))}
       </nav>
+
+      <button className="logout-btn" onClick={onLogout}>
+        <span className="nav-icon">🚪</span>
+        {sidebarOpen && <span>Logout</span>}
+      </button>
     </aside>
   );
-}
+};
+
+export default Sidebar;
